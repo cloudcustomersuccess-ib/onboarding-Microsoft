@@ -344,9 +344,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Content>
 
           <Footer style={{ textAlign: "center" }}>
-            <Text type="secondary">
-              Growth Lab ©{new Date().getFullYear()} - Partner Onboarding Platform
-            </Text>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+              <Image
+                src={
+                  isDarkMode
+                    ? "/images/TD SYNNEX_Logo_Aqua-White.png"
+                    : "/images/TD SYNNEX_Logo_Standard.png"
+                }
+                alt="TD SYNNEX"
+                width={100}
+                height={24}
+                style={{ objectFit: "contain" }}
+              />
+              <Text type="secondary" style={{ fontSize: "14px" }}>
+                | Growth Lab ©{new Date().getFullYear()} - All rights reserved
+              </Text>
+            </div>
           </Footer>
         </Layout>
       </Layout>
