@@ -73,6 +73,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const userMenuItems: MenuProps["items"] = [
     {
+      key: "user-info",
+      label: (
+        <div style={{ padding: "8px 0", pointerEvents: "none", cursor: "default" }}>
+          <Text strong style={{ fontSize: "14px", display: "block", marginBottom: "4px" }}>
+            {user?.FullName ||
+              (user?.Name && user?.Surname
+                ? `${user.Name} ${user.Surname}`
+                : user?.Email?.split("@")[0])}
+          </Text>
+          <Text type="secondary" style={{ fontSize: "12px", display: "block" }}>
+            {user?.Email}
+          </Text>
+        </div>
+      ),
+      disabled: true,
+      style: { cursor: "default" },
+    },
+    {
+      type: "divider",
+    },
+    {
       key: "profile",
       icon: <IdcardOutlined />,
       label: "Mi Perfil",
@@ -255,20 +276,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <ThemeSwitch checked={isDarkMode} onChange={handleThemeToggle} />
             </div>
 
-            {/* Right: Language + Search + User Badge */}
+            {/* Right: Search + Language + User Badge */}
             <Space size={20} align="center">
-              <LanguageSelector isDarkMode={isDarkMode} />
-
-              <Input
-                placeholder="Buscar..."
-                prefix={<SearchOutlined />}
-                size="large"
-                style={{
-                  width: "300px",
-                  borderRadius: "20px",
+              <div
+                onMouseEnter={(e) => {
+                  const input = e.currentTarget.querySelector("input");
+                  if (input) input.style.opacity = "0.7";
                 }}
-                allowClear
-              />
+                onMouseLeave={(e) => {
+                  const input = e.currentTarget.querySelector("input");
+                  if (input) input.style.opacity = "1";
+                }}
+              >
+                <Input
+                  placeholder="Buscar..."
+                  prefix={<SearchOutlined />}
+                  size="large"
+                  style={{
+                    width: "300px",
+                    borderRadius: "20px",
+                    transition: "opacity 160ms ease",
+                  }}
+                  allowClear
+                />
+              </div>
+
+              <LanguageSelector />
 
               <Dropdown
                 menu={{ items: userMenuItems }}
@@ -277,22 +310,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 arrow
               >
                 <Badge dot status="success" offset={[-5, 5]}>
-                  <Space
-                    align="center"
-                    size={12}
+                  <div
                     style={{
                       cursor: "pointer",
-                      padding: "8px 16px",
+                      padding: "4px",
                       borderRadius: "8px",
-                      transition: "all 0.3s",
+                      transition: "opacity 160ms ease",
+                      display: "flex",
+                      alignItems: "center",
+                      height: "40px",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = isDarkMode
-                        ? "rgba(0, 86, 87, 0.15)"
-                        : "rgba(0, 86, 87, 0.05)";
+                      e.currentTarget.style.opacity = "0.7";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.opacity = "1";
                     }}
                   >
                     <Avatar
@@ -302,18 +334,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         border: "2px solid #005657",
                       }}
                     />
-                    <Space direction="vertical" size={2} style={{ lineHeight: 1 }}>
-                      <Text strong style={{ fontSize: "14px", display: "block" }}>
-                        {user?.FullName ||
-                          (user?.Name && user?.Surname
-                            ? `${user.Name} ${user.Surname}`
-                            : user?.Email?.split("@")[0])}
-                      </Text>
-                      <Text type="secondary" style={{ fontSize: "12px", display: "block" }}>
-                        {user?.Email}
-                      </Text>
-                    </Space>
-                  </Space>
+                  </div>
                 </Badge>
               </Dropdown>
             </Space>

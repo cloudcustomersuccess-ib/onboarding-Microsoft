@@ -1,6 +1,6 @@
 /* From Uiverse.io by Galahhad */
 .theme-switch {
-  --toggle-size: 30px;
+  --toggle-size: 16px;
   /* the size is adjusted using font-size,
      this is not transform scale,
      so you can choose any size */
@@ -47,9 +47,9 @@
     0em 0.062em 0.125em rgba(255, 255, 255, 0.94);
   box-shadow: 0em -0.062em 0.062em rgba(0, 0, 0, 0.25),
     0em 0.062em 0.125em rgba(255, 255, 255, 0.94);
-  -webkit-transition: var(--transition);
-  -o-transition: var(--transition);
-  transition: var(--transition);
+  -webkit-transition: opacity 160ms ease;
+  -o-transition: opacity 160ms ease;
+  transition: opacity 160ms ease;
   position: relative;
 }
 
@@ -228,13 +228,16 @@
   + .theme-switch__container
   .theme-switch__circle-container:hover {
   left: calc(
-    100% - var(--circle-container-offset) - var(--circle-container-diameter) -
-      0.187em
+    100% - var(--circle-container-offset) - var(--circle-container-diameter)
   );
 }
 
+.theme-switch__container:hover {
+  opacity: 0.7;
+}
+
 .theme-switch__circle-container:hover {
-  left: calc(var(--circle-container-offset) + 0.187em);
+  left: var(--circle-container-offset);
 }
 
 .theme-switch__checkbox:checked

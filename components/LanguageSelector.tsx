@@ -29,11 +29,7 @@ const languageNames: Record<Language, Record<Language, string>> = {
   en: { es: "Spanish", pt: "Portuguese", en: "English" },
 };
 
-interface LanguageSelectorProps {
-  isDarkMode?: boolean;
-}
-
-export default function LanguageSelector({ isDarkMode = false }: LanguageSelectorProps) {
+export default function LanguageSelector() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>("es");
   const [hovered, setHovered] = useState(false);
   const [open, setOpen] = useState(false);
@@ -98,11 +94,6 @@ export default function LanguageSelector({ isDarkMode = false }: LanguageSelecto
 
   const active = hovered || open;
 
-  const borderColor = "#005657";
-  const baseBorder = "1px solid transparent"; // ✅ sin marco cuando no hover
-  const activeBorder = `1px solid ${borderColor}`; // ✅ fino y discreto
-  const activeBg = isDarkMode ? "rgba(0, 86, 87, 0.16)" : "rgba(0, 86, 87, 0.08)";
-
   return (
     <Dropdown
       menu={{
@@ -123,32 +114,32 @@ export default function LanguageSelector({ isDarkMode = false }: LanguageSelecto
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 8,
-          height: 34, // ✅ altura de header
-          padding: "0 10px", // ✅ compacto
-          borderRadius: 10,
+          gap: 6,
+          height: 40, // ✅ mismo tamaño del avatar (40px)
+          padding: "0 12px",
+          borderRadius: 8,
           cursor: "pointer",
           userSelect: "none",
-          transition: "background 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
-          border: active ? activeBorder : baseBorder,
-          background: active ? activeBg : "transparent",
-          boxShadow: active ? "0 0 0 2px rgba(0, 86, 87, 0.10)" : "none", // ✅ efecto sutil
+          transition: "background 160ms ease, opacity 160ms ease",
+          border: "none",
+          background: "transparent",
+          opacity: active ? 0.7 : 1,
         }}
       >
         <Image
           src={currentLang.flag}
           alt={currentLang.name}
-          width={20}
-          height={20}
-          style={{ borderRadius: 4, objectFit: "cover" }}
+          width={18}
+          height={18}
+          style={{ borderRadius: 3, objectFit: "cover" }}
           unoptimized
         />
 
-        <Text style={{ fontSize: 13, lineHeight: "16px", fontWeight: 600 }}>
+        <Text style={{ fontSize: 14, lineHeight: "20px", fontWeight: 500 }}>
           {currentLang.nativeName}
         </Text>
 
-        <GlobalOutlined style={{ fontSize: 14, opacity: 0.55, marginLeft: 2 }} />
+        <GlobalOutlined style={{ fontSize: 16, opacity: 0.6 }} />
       </div>
     </Dropdown>
   );
