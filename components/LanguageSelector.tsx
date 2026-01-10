@@ -20,19 +20,19 @@ interface LanguageOption {
 const languages: LanguageOption[] = [
   {
     key: "es",
-    flag: "/Images/ESP.png",
+    flag: "/images/ESP.png",
     name: "Spanish",
     nativeName: "Español",
   },
   {
     key: "pt",
-    flag: "/Images/PT.png",
+    flag: "/images/PT.png",
     name: "Portuguese",
     nativeName: "Português",
   },
   {
     key: "en",
-    flag: "/Images/EN.png",
+    flag: "/images/EN.png",
     name: "English",
     nativeName: "English",
   },
@@ -87,21 +87,22 @@ export default function LanguageSelector({
   const menuItems: MenuProps["items"] = languages.map((lang) => ({
     key: lang.key,
     label: (
-      <Space>
+      <Space align="center" size={12}>
         <Image
           src={lang.flag}
           alt={lang.name}
-          width={24}
-          height={24}
+          width={28}
+          height={28}
           style={{ borderRadius: "4px", objectFit: "cover" }}
+          unoptimized
         />
-        <Space direction="vertical" size={0}>
-          <Text strong style={{ fontSize: "14px" }}>
+        <Space direction="vertical" size={0} style={{ lineHeight: 1 }}>
+          <Text strong style={{ fontSize: "14px", display: "block" }}>
             {lang.nativeName}
           </Text>
           <Text
             type="secondary"
-            style={{ fontSize: "12px", lineHeight: "12px" }}
+            style={{ fontSize: "12px", display: "block", marginTop: "2px" }}
           >
             {languageNames[selectedLanguage][lang.key]}
           </Text>
@@ -114,14 +115,23 @@ export default function LanguageSelector({
   const currentLang = getCurrentLanguage();
 
   return (
-    <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight" arrow>
+    <Dropdown
+      menu={{ items: menuItems }}
+      trigger={["click"]}
+      placement="bottomRight"
+      arrow
+      overlayStyle={{ minWidth: "180px" }}
+    >
       <Space
+        align="center"
+        size={8}
         style={{
           cursor: "pointer",
-          padding: "8px 12px",
+          padding: "6px 12px",
           borderRadius: "8px",
           transition: "all 0.3s",
           border: isDarkMode ? "1px solid #303030" : "1px solid #d9d9d9",
+          minWidth: "140px",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = isDarkMode
@@ -135,24 +145,17 @@ export default function LanguageSelector({
         }}
       >
         <Image
-          src={currentLang?.flag || "/Images/ESP.png"}
+          src={currentLang?.flag || "/images/ESP.png"}
           alt={currentLang?.name || "Spanish"}
           width={24}
           height={24}
           style={{ borderRadius: "4px", objectFit: "cover" }}
+          unoptimized
         />
-        <Space direction="vertical" size={0}>
-          <Text strong style={{ fontSize: "14px" }}>
-            {currentLang?.nativeName}
-          </Text>
-          <Text
-            type="secondary"
-            style={{ fontSize: "11px", lineHeight: "11px" }}
-          >
-            {languageNames[selectedLanguage][selectedLanguage]}
-          </Text>
-        </Space>
-        <GlobalOutlined style={{ fontSize: "16px", opacity: 0.6 }} />
+        <Text strong style={{ fontSize: "13px", flex: 1 }}>
+          {currentLang?.nativeName}
+        </Text>
+        <GlobalOutlined style={{ fontSize: "14px", opacity: 0.5 }} />
       </Space>
     </Dropdown>
   );

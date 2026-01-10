@@ -239,7 +239,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Layout>
           <Header
             style={{
-              padding: "0 24px",
+              padding: "0 32px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -247,22 +247,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               position: "sticky",
               top: 0,
               zIndex: 999,
+              height: "72px",
             }}
           >
             {/* Left: Theme Toggle */}
-            <Space size="middle">
+            <div style={{ display: "flex", alignItems: "center" }}>
               <ThemeSwitch checked={isDarkMode} onChange={handleThemeToggle} />
-            </Space>
+            </div>
 
             {/* Right: Language + Search + User Badge */}
-            <Space size="large">
+            <Space size={20} align="center">
               <LanguageSelector isDarkMode={isDarkMode} />
 
               <Input
                 placeholder="Buscar..."
                 prefix={<SearchOutlined />}
+                size="large"
                 style={{
-                  width: "280px",
+                  width: "300px",
                   borderRadius: "20px",
                 }}
                 allowClear
@@ -274,8 +276,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 placement="bottomRight"
                 arrow
               >
-                <Badge dot status="success">
+                <Badge dot status="success" offset={[-5, 5]}>
                   <Space
+                    align="center"
+                    size={12}
                     style={{
                       cursor: "pointer",
                       padding: "8px 16px",
@@ -292,19 +296,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     }}
                   >
                     <Avatar
-                      src="/Images/notion-avatar-1768072727184.png"
+                      src="/images/notion-avatar-1768072727184.png"
+                      size={40}
                       style={{
                         border: "2px solid #005657",
                       }}
                     />
-                    <Space direction="vertical" size={0}>
-                      <Text strong style={{ fontSize: "14px" }}>
+                    <Space direction="vertical" size={2} style={{ lineHeight: 1 }}>
+                      <Text strong style={{ fontSize: "14px", display: "block" }}>
                         {user?.FullName ||
                           (user?.Name && user?.Surname
                             ? `${user.Name} ${user.Surname}`
                             : user?.Email?.split("@")[0])}
                       </Text>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                      <Text type="secondary" style={{ fontSize: "12px", display: "block" }}>
                         {user?.Email}
                       </Text>
                     </Space>
