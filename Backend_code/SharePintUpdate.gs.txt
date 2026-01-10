@@ -1,0 +1,75 @@
+/**
+ * Envía al Flow C un update de un solo campo en SharePoint usando ValidateUpdateListItem.
+ * Requiere:
+ * - CONFIG.UPDATE.SHAREPOINT_UPDATE_FLOW_URL
+ * - CONFIG.UPDATE.SHAREPOINT_UPDATE_SECRET
+ * - SP_INTERNAL_FIELD_MAP
+ */
+
+function pushSharePointUpdate_(clienteId, fieldKey, newValue, correlationId) {
+  if (!CONFIG.UPDATE || !CONFIG.UPDATE.SHAREPOINT_UPDATE_FLOW_URL) {
+    throw new Error("Falta CONFIG.UPDATE.SHAREPOINT_UPDATE_FLOW_URL");
+  }
+  if (!CONFIG.UPDATE.SHAREPOINT_UPDATE_SECRET) {
+    throw new Error("Falta CONFIG.UPDATE.SHAREPOINT_UPDATE_SECRET");
+  }
+
+  // 1) Leer SP_ItemId desde la tabla Onboardings
+  const rowOnb = findRowByClienteId_(CONFIG.SHEETS.ONBOARDINGS, clienteId);
+  if (rowOnb === -1) throw new Error("Onboarding no encontrado (Onboardings)");
+
+  const onboarding = readRowAsObject_(CONFIG.SHEETS.ONBOARDINGS, rowOnb);
+  const spItemId = onboarding.SP_ItemId;
+
+  if (!spItemId) throw new Error("Onboardings.SP_ItemId está vacío para este ClienteID");
+
+  // 2) Traducir FieldKey -> InternalName
+  const internalName = (SP_INTERNAL_FIELD_MAP && SP_INTERNAL_FIELD_MAP[fieldKey]) ? SP_INTERNAL_FIELD_MAP[fieldKey] : null;
+  if (!internalName) {
+    throw new Error(`No existe mapping SP_INTERNAL_FIELD_MAP para fieldKey: ${fieldKey}`);
+  }
+
+  // 3) Convertir el valor a string compatible con ValidateUpdateListItem
+  const fieldValueAsString = toSharePointValueString_(fieldKey, newValue);
+
+  // 4) Preparar payload para Flow C
+  const payload = {
+    secret: CONFIG.UPDATE.SHAREPOINT_UPDATE_SECRET,
+    SP_ItemId: Number(spItemId),
+    FieldInternalName: internalName,
+    FieldValueAsString: fieldValueAsString,
+    CorrelationId: correlationId || "",
+  };
+
+  // 5) POST al Flow
+  const res = UrlFetchApp.fetch(CONFIG.UPDATE.SHAREPOINT_UPDATE_FLOW_URL, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  });
+
+  const code = res.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error(`Error Flow C (SharePoint update). HTTP ${code}: ${res.getContentText()}`);
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Convierte valores a string para SharePoint ValidateUpdateListItem.
+ * - Boolean: "1" o "0"
+ * - Text: "..."
+ */
+function toSharePointValueString_(fieldKey, value) {
+  const type = FIELD_TYPES[fieldKey] || "BOOLEAN";
+
+  if (type === "TEXT") {
+    return String(value || "").trim();
+  }
+
+  // BOOLEAN
+  const v = (value === true || String(value).toLowerCase().trim() === "true" || String(value).trim() === "1");
+  return v ? "1" : "0";
+}

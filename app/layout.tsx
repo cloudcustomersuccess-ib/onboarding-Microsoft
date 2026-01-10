@@ -14,13 +14,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body>
         <AntdRegistry>
           <ConfigProvider
             theme={{
               token: {
-                colorPrimary: "#1890ff",
+                colorPrimary: "#005657",
+                colorLink: "#005657",
+                colorLinkHover: "#003031",
+                borderRadius: 8,
+                colorSuccess: "#52c41a",
+                colorWarning: "#faad14",
+                colorError: "#ff4d4f",
+                colorInfo: "#1890ff",
               },
             }}
           >

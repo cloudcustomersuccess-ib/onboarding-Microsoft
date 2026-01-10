@@ -32,6 +32,13 @@ async function parseGASResponse<T>(response: Response): Promise<T> {
   const snippet = text.slice(0, 200);
 
   try {
+    if (text.trim().startsWith("<!doctype html") || text.trim().startsWith("<html")) {
+      const extracted = extractJsonFromGASHtml(text);
+      if (extracted) {
+        return extracted as T;
+      }
+    }
+
     const json = JSON.parse(text);
     if (json.error) {
       throw new Error(json.error);
@@ -43,6 +50,41 @@ async function parseGASResponse<T>(response: Response): Promise<T> {
     }
     throw error;
   }
+}
+
+function extractJsonFromGASHtml(text: string): unknown | null {
+  const initMatch = text.match(/goog\.script\.init\("([\s\S]*?)",\s*""/);
+  if (!initMatch) {
+    return null;
+  }
+
+  const decodedInit = unescapeGasInit_(initMatch[1]);
+  try {
+    const initJson = JSON.parse(decodedInit);
+    const userHtml = typeof initJson.userHtml === "string" ? initJson.userHtml : "";
+    if (!userHtml) {
+      return null;
+    }
+    try {
+      return JSON.parse(userHtml);
+    } catch {
+      return { error: userHtml };
+    }
+  } catch {
+    return null;
+  }
+}
+
+function unescapeGasInit_(input: string): string {
+  return input
+    .replace(/\\x([0-9A-Fa-f]{2})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    )
+    .replace(/\\u([0-9A-Fa-f]{4})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    )
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\");
 }
 
 /**

@@ -1,0 +1,37 @@
+/**
+ * ENTRYPOINTS Web App
+ * Usamos "path" como router: ?path=/auth/request-otp etc.
+ * Body en JSON (POST).
+ */
+
+function doGet(e) {
+  return handle_(e, "GET");
+}
+
+function doPost(e) {
+  return handle_(e, "POST");
+}
+
+function handle_(e, method) {
+  try {
+    const req = normalizeRequest_(e, method);
+    return apiHandle_(req);
+  } catch (err) {
+    const obj = { error: String(err && (err.message || err)) };
+
+    // ✅ ROBUSTO: HtmlService evita el 302 de ContentService
+    return HtmlService.createHtmlOutput(JSON.stringify(obj));
+  }
+}
+
+function normalizeRequest_(e, method) {
+  const query = (e && e.parameter) ? e.parameter : {};
+  const path = query.path ? String(query.path) : "/";
+
+  let body = {};
+  if (e && e.postData && e.postData.contents) {
+    try { body = JSON.parse(e.postData.contents); } catch (_) { body = {}; }
+  }
+
+  return { method, path, query, body };
+}

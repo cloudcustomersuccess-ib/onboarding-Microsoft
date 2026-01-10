@@ -1,0 +1,82 @@
+/**
+ * DB HELPERS: leer/escribir en Google Sheets como si fuera una BBDD.
+ */
+
+function db() {
+  if (!CONFIG.SPREADSHEET_ID) throw new Error("CONFIG.SPREADSHEET_ID está vacío.");
+  return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+}
+
+function getSheet_(name) {
+  const ss = db();
+  const sh = ss.getSheetByName(name);
+  if (!sh) throw new Error(`No existe la pestaña: ${name}`);
+  return sh;
+}
+
+function getHeaderMap_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach((h, i) => { map[String(h).trim()] = i + 1; });
+  return map;
+}
+
+/**
+ * Encuentra la fila por ClienteID en una sheet.
+ * Devuelve rowNumber (>=2) o -1 si no existe.
+ */
+function findRowByClienteId_(sheetName, clienteId) {
+  const sh = getSheet_(sheetName);
+  const hm = getHeaderMap_(sh);
+  const col = hm["ClienteID"];
+  if (!col) throw new Error(`La sheet ${sheetName} no tiene columna ClienteID`);
+
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return -1;
+
+  const values = sh.getRange(2, col, lastRow - 1, 1).getValues().flat();
+  const idx = values.findIndex(v => String(v).trim() === String(clienteId).trim());
+  return idx === -1 ? -1 : (idx + 2);
+}
+
+function readRowAsObject_(sheetName, rowNumber) {
+  const sh = getSheet_(sheetName);
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const row = sh.getRange(rowNumber, 1, 1, sh.getLastColumn()).getValues()[0];
+  const obj = {};
+  headers.forEach((h, i) => { obj[String(h).trim()] = row[i]; });
+  return obj;
+}
+
+function writeField_(sheetName, rowNumber, fieldKey, value) {
+  const sh = getSheet_(sheetName);
+  const hm = getHeaderMap_(sh);
+  const col = hm[fieldKey];
+  if (!col) throw new Error(`Campo no existe en ${sheetName}: ${fieldKey}`);
+  sh.getRange(rowNumber, col).setValue(value);
+}
+
+function now_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+}
+
+/**
+ * Auditoría (solo en Google Sheet)
+ * Columnas: AuditId, ClienteID, FieldKey, OldValue, NewValue, Action, ActorUserId, ActorRole, Source, Timestamp, CorrelationId
+ */
+function auditLog_(entry) {
+  const sh = getSheet_(CONFIG.SHEETS.AUDIT);
+  sh.appendRow([
+    entry.AuditId,
+    entry.ClienteID,
+    entry.FieldKey,
+    entry.OldValue,
+    entry.NewValue,
+    entry.Action,
+    entry.ActorUserId,
+    entry.ActorRole,
+    entry.Source,
+    entry.Timestamp,
+    entry.CorrelationId,
+  ]);
+}

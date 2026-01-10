@@ -1,0 +1,139 @@
+/**
+ * CONFIGURACIÓN CENTRAL
+ */
+
+const CONFIG = {
+  // 1) ID de tu Google Sheet (OBLIGATORIO)
+  SPREADSHEET_ID: "1EEMYe1RLNYbCtn446z0FYNfbga6ThEnAAeKQejTLmM0",
+
+  // 2) Nombres exactos de pestañas
+  SHEETS: {
+    ONBOARDINGS: "Onboardings",
+    MIRROR: "Onboarding_Mirror",
+    USERS: "Users",
+    ORGS: "Organizations",
+    USER_ONBOARDINGS: "UserOnboardings",
+    NOTES: "Notes",
+    AUDIT: "AuditLog",
+  },
+
+  // 3) OTP
+  OTP: {
+    LENGTH: 6,
+    TTL_MINUTES: 10,
+  },
+
+  // 4) Roles
+  ROLES: {
+    ADMIN: "ADMIN",
+    USER: "USER",
+  },
+
+  // 5) Email via Power Automate (Outlook)
+  EMAIL: {
+    // URL del Flow (When an HTTP request is received)
+    OUTLOOK_FLOW_URL:
+      "https://default7fe14ab68f5d413984bfcd8aed0ee6.b9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/971cd2b7dc684d5faabf1a92958e2ef8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=NLJnnpziKWq4R9U3ZMa7WSeIIc24SUUCKHqR4JxVC-o",
+
+    // Secret opcional (recomendado) que validará el Flow
+    OUTLOOK_FLOW_SECRET: "nkyXizhzqhCykbggdAkvLG8w",
+
+    // ✅ NUEVO: nombre del campo que enviamos al Flow para validar
+    // (Tu condición en Power Automate debería comprobar body.secret == OUTLOOK_FLOW_SECRET)
+    SECRET_FIELD: "secret",
+  },
+
+  // 6) Sync endpoint secret (opcional, recomendado)
+  SYNC: {
+    SHAREPOINT_SECRET: "R9olA6yKzM1IZt4TraY47Gab",
+  },
+
+  // 7) Update SharePoint (Apps Script -> Flow C -> SharePoint ValidateUpdateListItem)
+  UPDATE: {
+    SHAREPOINT_UPDATE_FLOW_URL:
+      "https://default7fe14ab68f5d413984bfcd8aed0ee6.b9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3abbc810bbda4ce8919e0c0e044393b2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xiVmF3GLRMa2jwzRv0wfV9HqGcxB1lbfXMLzOlXv4gs",
+    SHAREPOINT_UPDATE_SECRET: "0ijLNTeLjmTc6ODjwqQyY37E",
+  },
+};
+
+/**
+ * Campos editables por el partner (USER), según lo acordado.
+ */
+const PARTNER_EDITABLE_FIELDS = new Set([
+  // Paso 1
+  "Alta_Hola_TDSynnex_",
+  "SEPA_B2B_Completado",
+
+  // Paso 2 Microsoft
+  "Alta_PAC_MFT",
+  "Alta_MF_Cloud_AI",
+  "TD_handshake_MFT",
+
+  // Paso 2 AWS
+  "AWS Partner Account",
+  "AWS_Partner_Engagement",
+  "AWS Form",
+  "AWS_DSA",
+  "AWS_Marketplace",
+
+  // Paso 2 Google
+  "GC_ID",
+  "Google_Cloud_Domain",
+
+  // Paso 3
+  "ION_T&C_aceptados",
+  "Program_Request",
+]);
+
+/**
+ * Tipado mínimo por campo para saber si aplica CompletedAt o no.
+ * (Si un campo no está aquí, asumimos BOOLEAN por defecto.)
+ */
+const FIELD_TYPES = {
+  GC_ID: "TEXT",
+  Google_Cloud_Domain: "TEXT",
+};
+
+/**
+ * Mapping: FieldKey (UI / Google Sheet) -> Internal Name (SharePoint)
+ * Usamos los internal names reales que has pasado.
+ */
+const SP_INTERNAL_FIELD_MAP = {
+  // Paso 1
+  "Alta_Hola_TDSynnex_": "Alta_Hola_TDSynnex_",
+  "SEPA_B2B_Completado": "SEPA_B2B_Completado",
+
+  // Paso 2 Microsoft
+  "Alta_PAC_MFT": "Alta_PAC_MFT",
+  "Alta_MF_Cloud_AI": "Alta_MF_Cloud_AI",
+  "TD_handshake_MFT": "TD_handshake_MFT",
+
+  // Paso 2 AWS
+  "AWS Partner Account": "AWSPartnerAccount",
+  "AWS_Partner_Engagement": "AWS_Partner_Engagement",
+  "AWS Form": "AWSForm",
+  "AWS_DSA": "AWS_DSA",
+  "AWS_Marketplace": "AWS_Marketplace",
+
+  // Paso 2 Google
+  "GC_ID": "GC_ID",
+  "Google_Cloud_Domain": "Google_Cloud_Domain",
+
+  // Paso 3
+  "ION_T&C_aceptados": "ION_TC_aceptados",
+  "Program_Request": "Program_Request",
+};
+
+/**
+ * ✅ NUEVO helper:
+ * Construye el body para el Flow de Outlook, incluyendo SIEMPRE el secret.
+ * Úsalo en la función que haga UrlFetchApp.fetch(CONFIG.EMAIL.OUTLOOK_FLOW_URL, ...).
+ *
+ * @param {Object} emailData - { to, subject, htmlBody, ... }
+ * @returns {Object} payload listo para enviar a Power Automate
+ */
+function buildOutlookFlowPayload_(emailData) {
+  const payload = Object.assign({}, emailData);
+  payload[CONFIG.EMAIL.SECRET_FIELD] = CONFIG.EMAIL.OUTLOOK_FLOW_SECRET;
+  return payload;
+}

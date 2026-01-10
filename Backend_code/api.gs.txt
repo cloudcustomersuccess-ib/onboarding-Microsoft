@@ -1,0 +1,157 @@
+/**
+ * AUTH: OTP por email enviado via Power Automate + Outlook.
+ * Guardamos OTP temporalmente en PropertiesService.
+ */
+
+function requestOtp_(email) {
+  email = String(email || "").trim().toLowerCase();
+  if (!email) throw new Error("Email requerido");
+
+  const otp = generateOtp_();
+  const expiresAt = Date.now() + CONFIG.OTP.TTL_MINUTES * 60 * 1000;
+
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty(`otp:${email}`, JSON.stringify({ otp, expiresAt }));
+
+  // Enviar OTP por Outlook (Power Automate)
+  sendEmailViaOutlook_(email, otp);
+
+  return { ok: true };
+}
+
+function verifyOtp_(email, otp) {
+  email = String(email || "").trim().toLowerCase();
+  otp = String(otp || "").trim();
+
+  const props = PropertiesService.getScriptProperties();
+  const raw = props.getProperty(`otp:${email}`);
+  if (!raw) throw new Error("OTP no encontrado o caducado");
+
+  const data = JSON.parse(raw);
+  if (Date.now() > data.expiresAt) {
+    props.deleteProperty(`otp:${email}`);
+    throw new Error("OTP caducado");
+  }
+  if (otp !== String(data.otp)) throw new Error("OTP incorrecto");
+
+  props.deleteProperty(`otp:${email}`);
+
+  const user = findUserByEmail_(email);
+  if (!user) throw new Error("Usuario no existe en Users o IsActive=false (si lo aplicas)");
+
+  const token = signToken_({
+    email,
+    userId: user.UserId,
+    role: user.Role,
+    orgId: user.OrganizationId || "",
+    exp: Date.now() + 8 * 60 * 60 * 1000, // 8h
+  });
+
+  return { token, user };
+}
+
+function sendEmailViaOutlook_(toEmail, otp) {
+  if (!CONFIG.EMAIL.OUTLOOK_FLOW_URL) {
+    throw new Error("CONFIG.EMAIL.OUTLOOK_FLOW_URL está vacío");
+  }
+
+  // Payload base del email
+  const basePayload = {
+    to: toEmail,
+    subject: "Tu código de acceso (OTP) - Partner Onboarding",
+    htmlBody: `<p>Tu código es: <b style="font-size:18px">${otp}</b></p>
+               <p>Caduca en ${CONFIG.OTP.TTL_MINUTES} minutos.</p>`,
+    otp,
+    ttlMinutes: CONFIG.OTP.TTL_MINUTES,
+  };
+
+  // ✅ CRÍTICO: incluir secret en el BODY para que Power Automate lo pueda validar
+  // Usa helper de Config.gs. Si no existiera, hacemos fallback.
+  const payload = (typeof buildOutlookFlowPayload_ === "function")
+    ? buildOutlookFlowPayload_(basePayload)
+    : Object.assign({}, basePayload, { secret: CONFIG.EMAIL.OUTLOOK_FLOW_SECRET });
+
+  const res = UrlFetchApp.fetch(CONFIG.EMAIL.OUTLOOK_FLOW_URL, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+
+    // (Opcional) dejamos también el header por compatibilidad/extra seguridad,
+    // pero el condition de PA debe mirar el body.secret
+    headers: {
+      "x-flow-secret": CONFIG.EMAIL.OUTLOOK_FLOW_SECRET || "",
+    },
+  });
+
+  const code = res.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error(`Error enviando OTP vía Outlook Flow. HTTP ${code}: ${res.getContentText()}`);
+  }
+
+  return { ok: true };
+}
+
+function generateOtp_() {
+  const len = CONFIG.OTP.LENGTH;
+  let s = "";
+  for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 10);
+  return s;
+}
+
+function tokenSecret_() {
+  const props = PropertiesService.getScriptProperties();
+  let secret = props.getProperty("TOKEN_SECRET");
+  if (!secret) {
+    secret = Utilities.getUuid();
+    props.setProperty("TOKEN_SECRET", secret);
+  }
+  return secret;
+}
+
+function signToken_(payload) {
+  const body = Utilities.base64EncodeWebSafe(JSON.stringify(payload));
+  const sig = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(body, tokenSecret_())
+  );
+  return `${body}.${sig}`;
+}
+
+function verifyToken_(token) {
+  token = String(token || "");
+  const parts = token.split(".");
+  if (parts.length !== 2) throw new Error("Token inválido");
+
+  const [body, sig] = parts;
+  const expectedSig = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(body, tokenSecret_())
+  );
+  if (sig !== expectedSig) throw new Error("Firma inválida");
+
+  const payload = JSON.parse(
+    Utilities.newBlob(Utilities.base64DecodeWebSafe(body)).getDataAsString()
+  );
+
+  if (Date.now() > payload.exp) throw new Error("Token caducado");
+  return payload;
+}
+
+function findUserByEmail_(email) {
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
+  const hm = getHeaderMap_(sh);
+  const colEmail = hm["Email"];
+  if (!colEmail) throw new Error("Users no tiene columna Email");
+
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return null;
+
+  const emails = sh.getRange(2, colEmail, lastRow - 1, 1)
+    .getValues()
+    .flat()
+    .map(v => String(v).trim().toLowerCase());
+
+  const idx = emails.findIndex(v => v === email);
+  if (idx === -1) return null;
+
+  return readRowAsObject_(CONFIG.SHEETS.USERS, idx + 2);
+}
