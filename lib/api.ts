@@ -1,0 +1,188 @@
+import {
+  OnboardingListResponse,
+  OnboardingDetailResponse,
+  VerifyOtpResponse,
+  ApiErrorResponse,
+} from "@/types";
+
+// Configuration
+const GAS_BASE_URL = process.env.NEXT_PUBLIC_GAS_BASE_URL;
+const USE_PROXY = process.env.NEXT_PUBLIC_USE_GAS_PROXY === "true";
+
+function getGasBaseUrl(): string {
+  if (!GAS_BASE_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_GAS_BASE_URL is required. Set it in your environment."
+    );
+  }
+  if (GAS_BASE_URL.startsWith("/")) {
+    throw new Error(
+      "NEXT_PUBLIC_GAS_BASE_URL must be an absolute URL, not a relative path."
+    );
+  }
+  return GAS_BASE_URL;
+}
+
+/**
+ * Parse response from Google Apps Script.
+ * GAS returns Content-Type: text/html but body is JSON.
+ */
+async function parseGASResponse<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  const snippet = text.slice(0, 200);
+
+  try {
+    const json = JSON.parse(text);
+    if (json.error) {
+      throw new Error(json.error);
+    }
+    return json as T;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error(`Invalid JSON response. Snippet: ${snippet}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Build URL for GAS endpoint
+ */
+function buildUrl(path: string, token?: string): string {
+  if (USE_PROXY) {
+    let url = `/api/gas?path=${encodeURIComponent(path)}`;
+    if (token) {
+      url += `&token=${encodeURIComponent(token)}`;
+    }
+    return url;
+  }
+
+  const baseUrl = getGasBaseUrl();
+  let url = `${baseUrl}?path=${encodeURIComponent(path)}`;
+  if (token) {
+    url += `&token=${encodeURIComponent(token)}`;
+  }
+  return url;
+}
+
+/**
+ * Make API request
+ */
+async function apiRequest<T>(
+  path: string,
+  method: "GET" | "POST" = "GET",
+  token?: string,
+  body?: any
+): Promise<T> {
+  const url = buildUrl(path, token);
+
+  const options: RequestInit = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  if (method === "POST" && body) {
+    options.body = JSON.stringify(body);
+  }
+
+  try {
+    const response = await fetch(url, options);
+
+    if (!response.ok && response.status >= 400) {
+      const errorData = await parseGASResponse<ApiErrorResponse>(response);
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    return await parseGASResponse<T>(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Auth: Request OTP
+ */
+export async function requestOtp(email: string): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>("/auth/request-otp", "POST", undefined, {
+    email,
+  });
+}
+
+/**
+ * Auth: Verify OTP
+ */
+export async function verifyOtp(
+  email: string,
+  otp: string
+): Promise<VerifyOtpResponse> {
+  const response = await apiRequest<VerifyOtpResponse>(
+    "/auth/verify-otp",
+    "POST",
+    undefined,
+    { email, otp }
+  );
+  return response;
+}
+
+/**
+ * Onboardings: List
+ */
+export async function listOnboardings(
+  token: string
+): Promise<OnboardingListResponse> {
+  return apiRequest<OnboardingListResponse>("/onboardings", "GET", token);
+}
+
+/**
+ * Onboardings: Get Detail
+ */
+export async function getOnboardingDetail(
+  token: string,
+  clienteId: string
+): Promise<OnboardingDetailResponse> {
+  return apiRequest<OnboardingDetailResponse>(
+    `/onboardings/${encodeURIComponent(clienteId)}`,
+    "GET",
+    token
+  );
+}
+
+/**
+ * Onboardings: Update Field
+ */
+export async function updateField(
+  token: string,
+  clienteId: string,
+  fieldKey: string,
+  value: any
+): Promise<{ ok: boolean; fieldKey: string; value: any }> {
+  return apiRequest<{ ok: boolean; fieldKey: string; value: any }>(
+    `/onboardings/${encodeURIComponent(clienteId)}/fields`,
+    "POST",
+    token,
+    { fieldKey, value }
+  );
+}
+
+/**
+ * Onboardings: Add Note
+ */
+export async function addNote(
+  token: string,
+  clienteId: string,
+  payload: {
+    scopeType?: string;
+    substepKey?: string;
+    visibility?: string;
+    body: string;
+  }
+): Promise<{ ok: boolean; noteId: string }> {
+  return apiRequest<{ ok: boolean; noteId: string }>(
+    `/onboardings/${encodeURIComponent(clienteId)}/notes`,
+    "POST",
+    token,
+    payload
+  );
+}
