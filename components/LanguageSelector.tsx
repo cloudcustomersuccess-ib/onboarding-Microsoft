@@ -135,11 +135,11 @@ export default function LanguageSelector() {
           unoptimized
         />
 
-        <Text style={{ fontSize: 14, lineHeight: "20px", fontWeight: 500 }}>
+        <Text style={{ fontSize: 15, lineHeight: "22px", fontWeight: 500 }}>
           {currentLang.nativeName}
         </Text>
 
-        <GlobalOutlined style={{ fontSize: 16, opacity: 0.6 }} />
+        <GlobalOutlined style={{ fontSize: 18, opacity: 0.6 }} />
       </div>
     </Dropdown>
   );

@@ -218,8 +218,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     : "https://i.imgur.com/46EQNul.png"
                 }
                 alt="Growth Lab"
-                width={150}
-                height={40}
+                width={180}
+                height={48}
                 style={{ objectFit: "contain" }}
               />
             ) : (
@@ -326,11 +326,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   <Avatar
-                    src="/images/notion-avatar-1768072727184.png"
+                    src="/images/my-notion-face-portait.png"
                     size={48}
-                    style={{
-                      border: "2px solid #005657",
-                    }}
                   />
                 </div>
               </Dropdown>
