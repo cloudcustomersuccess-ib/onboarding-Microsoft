@@ -115,7 +115,7 @@ export default function LanguageSelector() {
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          height: 40, // ✅ mismo tamaño del avatar (40px)
+          height: 48,
           padding: "0 12px",
           borderRadius: 8,
           cursor: "pointer",

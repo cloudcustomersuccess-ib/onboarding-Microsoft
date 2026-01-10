@@ -326,7 +326,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   <Avatar
-                    src="/images/my-notion-face-portait.png"
+                    src="/images/my-notion-face-portrait.png"
                     size={48}
                   />
                 </div>
