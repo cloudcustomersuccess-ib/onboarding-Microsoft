@@ -10,7 +10,6 @@ import {
   Input,
   ConfigProvider,
   theme,
-  Badge,
   Dropdown,
 } from "antd";
 import type { MenuProps } from "antd";
@@ -19,7 +18,6 @@ import {
   QuestionCircleOutlined,
   BookOutlined,
   RocketOutlined,
-  UserOutlined,
   SearchOutlined,
   LogoutOutlined,
   SettingOutlined,
@@ -309,33 +307,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 placement="bottomRight"
                 arrow
               >
-                <Badge dot status="success" offset={[-5, 5]}>
-                  <div
+                <div
+                  style={{
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "12px",
+                    transition: "opacity 160ms ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "56px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = "0.7";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = "1";
+                  }}
+                >
+                  <Avatar
+                    src="/images/notion-avatar-1768072727184.png"
+                    size={48}
                     style={{
-                      cursor: "pointer",
-                      padding: "4px",
-                      borderRadius: "8px",
-                      transition: "opacity 160ms ease",
-                      display: "flex",
-                      alignItems: "center",
-                      height: "40px",
+                      border: "2px solid #005657",
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = "0.7";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = "1";
-                    }}
-                  >
-                    <Avatar
-                      src="/images/notion-avatar-1768072727184.png"
-                      size={40}
-                      style={{
-                        border: "2px solid #005657",
-                      }}
-                    />
-                  </div>
-                </Badge>
+                  />
+                </div>
               </Dropdown>
             </Space>
           </Header>
