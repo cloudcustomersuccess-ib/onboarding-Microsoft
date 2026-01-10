@@ -8,12 +8,10 @@ import {
   Space,
   Avatar,
   Input,
-  Switch,
   ConfigProvider,
   theme,
   Badge,
   Dropdown,
-  Divider,
 } from "antd";
 import type { MenuProps } from "antd";
 import {
@@ -23,8 +21,6 @@ import {
   RocketOutlined,
   UserOutlined,
   SearchOutlined,
-  BulbOutlined,
-  BulbFilled,
   LogoutOutlined,
   SettingOutlined,
   IdcardOutlined,
@@ -33,6 +29,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { getUser, clearSession, isAuthenticated } from "@/lib/session";
 import type { User } from "@/types";
 import Image from "next/image";
+import ThemeSwitch from "@/components/ThemeSwitch";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
@@ -253,23 +251,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           >
             {/* Left: Theme Toggle */}
             <Space size="middle">
-              <Space>
-                {isDarkMode ? (
-                  <BulbFilled style={{ color: "#ffd666", fontSize: "18px" }} />
-                ) : (
-                  <BulbOutlined style={{ fontSize: "18px" }} />
-                )}
-                <Switch
-                  checked={isDarkMode}
-                  onChange={handleThemeToggle}
-                  checkedChildren="Dark"
-                  unCheckedChildren="Light"
-                />
-              </Space>
+              <ThemeSwitch checked={isDarkMode} onChange={handleThemeToggle} />
             </Space>
 
-            {/* Right: Search + User Badge */}
+            {/* Right: Language + Search + User Badge */}
             <Space size="large">
+              <LanguageSelector isDarkMode={isDarkMode} />
+
               <Input
                 placeholder="Buscar..."
                 prefix={<SearchOutlined />}
@@ -304,9 +292,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     }}
                   >
                     <Avatar
-                      icon={<UserOutlined />}
+                      src="/Images/notion-avatar-1768072727184.png"
                       style={{
-                        background: "linear-gradient(135deg, #005657 0%, #003031 100%)",
+                        border: "2px solid #005657",
                       }}
                     />
                     <Space direction="vertical" size={0}>
