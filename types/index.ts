@@ -43,7 +43,7 @@ export interface Mirror {
 export interface Note {
   NoteId?: string;
   ClienteID: string;
-  ScopeType?: string;
+  ScopeType?: string; // "GENERAL" | "SUBSTEP"
   SubstepKey?: string;
   Visibility?: string;
   AuthorUserId?: string;

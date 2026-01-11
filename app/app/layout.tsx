@@ -56,12 +56,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "dark") {
       setIsDarkMode(true);
+      document.documentElement.setAttribute("data-theme", "dark");
     }
   }, [router]);
 
   const handleThemeToggle = (checked: boolean) => {
     setIsDarkMode(checked);
     localStorage.setItem("theme", checked ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", checked ? "dark" : "light");
   };
 
   const handleLogout = () => {
