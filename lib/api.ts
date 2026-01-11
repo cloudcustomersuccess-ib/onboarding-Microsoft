@@ -112,7 +112,7 @@ function buildUrl(path: string, token?: string): string {
  */
 async function apiRequest<T>(
   path: string,
-  method: "GET" | "POST" = "GET",
+  method: "GET" | "POST" | "DELETE" = "GET",
   token?: string,
   body?: any
 ): Promise<T> {
