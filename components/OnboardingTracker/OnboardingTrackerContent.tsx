@@ -403,7 +403,18 @@ export default function OnboardingTrackerContent({
               </div>
             )}
 
-            {/* Bottom row: Overall progress + Agent */}
+          </div>
+        </Col>
+
+        {/* Right Column: Timeline + Notes */}
+        <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ height: 360 }}>
+              <TimelineCard items={timelineItems} currentKey={currentTimelineKey} t={t} />
+            </div>
+            <div style={{ height: 360 }}>
+              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
+            </div>
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
                 <OverallProgressCard
@@ -423,25 +434,13 @@ export default function OnboardingTrackerContent({
                         ? "Tu punto de contacto para completar el alta y resolver bloqueos."
                         : lang === "en"
                         ? "Your contact point to complete onboarding and resolve issues."
-                        : "Seu ponto de contato para concluir a integração e resolver problemas."
+                        : "Seu ponto de contacto para concluir a integração e resolver problemas."
                     }
                     email="customersuccess.es@tdsynnex.com"
                   />
                 </div>
               </Col>
             </Row>
-          </div>
-        </Col>
-
-        {/* Right Column: Timeline + Notes */}
-        <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ height: 360 }}>
-              <TimelineCard items={timelineItems} currentKey={currentTimelineKey} t={t} />
-            </div>
-            <div style={{ height: 360 }}>
-              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
-            </div>
           </div>
         </Col>
       </Row>

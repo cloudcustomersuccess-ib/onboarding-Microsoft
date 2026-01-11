@@ -124,49 +124,71 @@ export function CombinedTrackerCard({
         ...cardHeaderStyles,
       }}
     >
-      <Steps
-        current={currentStepIndex}
-        titlePlacement="vertical"
-        onChange={(idx) => {
-          const step = stepsUI[idx];
-          if (step?.locked) return;
-          onSelectStep(idx);
-        }}
-        items={stepsUI.map((s) => ({
-          title: (
-            <Text strong style={{ fontSize: 14 }}>
-              {s.title}
-            </Text>
-          ),
-          description: (
-            <Text
-              type={s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined}
-              style={{ fontSize: 12 }}
-            >
-              {s.statusText}
-            </Text>
-          ),
-          percent: s.percent,
-          disabled: !!s.locked,
-          icon: s.locked ? (
-            <Tooltip title={t.ui.lockedTooltip}>
-              <LockOutlined />
-            </Tooltip>
-          ) : undefined,
-        }))}
-      />
+      <div style={{ padding: "4px 0" }}>
+        <Steps
+          current={currentStepIndex}
+          style={{ width: "100%" }}
+          onChange={(idx) => {
+            const step = stepsUI[idx];
+            if (step?.locked) return;
+            onSelectStep(idx);
+          }}
+          items={stepsUI.map((s) => ({
+            title: (
+              <Text strong style={{ fontSize: 14, display: "block", textAlign: "left" }}>
+                {s.title}
+              </Text>
+            ),
+            description: (
+              <Text
+                type={s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined}
+                style={{ fontSize: 12, display: "block", textAlign: "left" }}
+              >
+                {s.statusText}
+              </Text>
+            ),
+            percent: s.percent,
+            disabled: !!s.locked,
+            icon: s.locked ? (
+              <Tooltip title={t.ui.lockedTooltip}>
+                <LockOutlined />
+              </Tooltip>
+            ) : undefined,
+          }))}
+        />
+      </div>
 
-      <Divider style={{ margin: "12px 0" }} />
+      <Divider style={{ margin: "8px 0" }} />
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.8fr) minmax(0, 1fr)",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.8fr)",
           gap: 16,
           flex: 1,
           minHeight: 0,
         }}
       >
+        <div style={{ overflow: "auto" }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {t.ui.substeps}
+          </Text>
+          <Steps
+            current={currentSubIndex}
+            direction="vertical"
+            onChange={(idx) => {
+              if (substeps[idx]?.disabled) return;
+              onChangeSubstep(idx);
+            }}
+            items={substeps.map((s, idx) => ({
+              title: s.title,
+              disabled: s.disabled,
+              status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
+              icon: s.done ? <CheckCircleFilled /> : undefined,
+            }))}
+          />
+        </div>
+
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div
             style={{
@@ -223,27 +245,6 @@ export function CombinedTrackerCard({
               </Space>
             </Flex>
           </div>
-        </div>
-
-        <div style={{ overflow: "auto" }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t.ui.substeps}
-          </Text>
-          <Steps
-            current={currentSubIndex}
-            direction="vertical"
-            onChange={(idx) => {
-              if (substeps[idx]?.disabled) return;
-              onChangeSubstep(idx);
-            }}
-            items={substeps.map((s, idx) => ({
-              title: s.title,
-              disabled: s.disabled,
-              status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
-              icon: s.done ? <CheckCircleFilled /> : undefined,
-            }))}
-          />
-        </div>
       </div>
     </Card>
   );
