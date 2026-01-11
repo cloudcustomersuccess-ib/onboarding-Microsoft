@@ -33,6 +33,21 @@ import type { TrackerTranslations } from "@/lib/i18n/trackerTranslations";
 
 const { Text, Title, Paragraph } = Typography;
 
+const cardBaseStyle: React.CSSProperties = {
+  borderRadius: 14,
+  border: "1px solid #eef0f3",
+  boxShadow: "0 10px 24px rgba(24, 39, 75, 0.06)",
+  background: "linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%)",
+};
+
+const cardHeaderStyles = {
+  header: {
+    borderBottom: "1px solid #f0f2f5",
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+};
+
 // ============================================================
 // 1) MAIN STEPS CARD
 // ============================================================
@@ -61,8 +76,8 @@ export function MainStepsCard({
   return (
     <Card
       title={t.ui.generalSteps}
-      styles={{ body: { paddingTop: 16 } }}
-      style={{ height: "100%", overflow: "hidden" }}
+      styles={{ ...cardHeaderStyles, body: { paddingTop: 16 } }}
+      style={{ height: "100%", overflow: "hidden", ...cardBaseStyle }}
     >
       <Steps
         current={currentStepIndex}
@@ -135,8 +150,8 @@ export function SubstepsStepper({
   return (
     <Card
       title={t.ui.substeps}
-      style={{ overflow: "hidden" }}
-      styles={{ body: { paddingTop: 16 } }}
+      style={{ overflow: "hidden", ...cardBaseStyle }}
+      styles={{ ...cardHeaderStyles, body: { paddingTop: 16 } }}
     >
       <Steps
         current={currentSubIndex}
@@ -189,8 +204,7 @@ export function SubstepInstructionCard({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        borderRadius: 8,
+        ...cardBaseStyle,
       }}
       styles={{
         body: {
@@ -198,13 +212,12 @@ export function SubstepInstructionCard({
           overflow: "auto",
           display: "flex",
           flexDirection: "column",
+          paddingBottom: 12,
         },
-        header: {
-          borderBottom: "1px solid #f0f0f0",
-        },
+        ...cardHeaderStyles,
       }}
     >
-      <div style={{ flex: 1, overflow: "auto", marginBottom: 16 }}>
+      <div style={{ flex: 1, overflow: "auto", marginBottom: 8 }}>
         {loading ? (
           <Skeleton active />
         ) : (
@@ -214,7 +227,7 @@ export function SubstepInstructionCard({
         )}
       </div>
 
-      <Divider style={{ margin: "12px 0" }} />
+      <Divider style={{ margin: "8px 0" }} />
 
       <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
         <Space wrap>
@@ -273,8 +286,15 @@ export function TimelineCard({ items, currentKey, t }: TimelineCardProps) {
   return (
     <Card
       title={t.ui.timeline}
-      style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}
+      style={{
+        height: "100%",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        ...cardBaseStyle,
+      }}
       styles={{
+        ...cardHeaderStyles,
         body: { flex: 1, overflow: "auto", paddingTop: 16 },
       }}
     >
@@ -375,8 +395,8 @@ export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
           {t.ui.addNote}
         </Button>
       }
-      style={{ height: "100%", overflow: "hidden" }}
-      styles={{ body: { height: "100%", overflow: "auto" } }}
+      style={{ height: "100%", overflow: "hidden", ...cardBaseStyle }}
+      styles={{ ...cardHeaderStyles, body: { height: "100%", overflow: "auto" } }}
     >
       <List
         dataSource={notes}
@@ -438,8 +458,9 @@ export function OverallProgressCard({
   return (
     <Card
       title={t.ui.overallProgress}
-      style={{ height: "100%" }}
+      style={{ height: "100%", ...cardBaseStyle }}
       styles={{
+        ...cardHeaderStyles,
         body: { display: "flex", alignItems: "center", justifyContent: "center" },
       }}
     >

@@ -332,9 +332,9 @@ export default function OnboardingTrackerContent({
   };
 
   // Responsive orientation for substeps
-  const substepsOrientation: "horizontal" | "vertical" = screens.md
-    ? "horizontal"
-    : "vertical";
+  const substepsOrientation: "horizontal" | "vertical" = screens.lg
+    ? "vertical"
+    : "horizontal";
 
   if (loading) {
     return (
@@ -381,68 +381,53 @@ export default function OnboardingTrackerContent({
   return (
     <div style={{ height: "calc(100vh - 168px)", overflow: "hidden" }}>
       <Row gutter={[16, 16]} style={{ height: "100%" }}>
-        {/* Left Column: General Steps (Stepper vertical) */}
-        <Col xs={24} xl={4} style={{ height: "100%", overflow: "auto" }}>
-          <MainStepsCard
-            currentStepIndex={currentMainStepIndex}
-            stepsUI={mainStepsUI}
-            onSelectStep={(idx) => {
-              if (!mainStepsUI[idx]?.locked) {
-                setCurrentMainStepIndex(idx);
-              }
-            }}
-            t={t}
-          />
-        </Col>
-
-        {/* Center Column: Substeps Stepper (top) + Instructions Card (bottom) */}
-        <Col xs={24} xl={12} style={{ height: "100%", overflow: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
-            {/* Substeps Stepper - Horizontal at top */}
-            <SubstepsStepper
-              currentSubIndex={currentSubstepIndex}
-              orientation={substepsOrientation}
-              substeps={substepsUI}
-              onChange={(idx) => {
-                if (!substepsUI[idx]?.disabled) {
-                  setCurrentSubstepIndex(idx);
+        {/* Left Column: General steps + Substeps + Instructions + Progress/Agent */}
+        <Col xs={24} xl={16} style={{ height: "100%", overflow: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Top row: General Steps */}
+            <MainStepsCard
+              currentStepIndex={currentMainStepIndex}
+              stepsUI={mainStepsUI}
+              onSelectStep={(idx) => {
+                if (!mainStepsUI[idx]?.locked) {
+                  setCurrentMainStepIndex(idx);
                 }
               }}
               t={t}
             />
 
-            {/* Instruction Card - Takes remaining space */}
-            {currentSubstep && (
-              <div style={{ flex: 1, minHeight: 0 }}>
-                <SubstepInstructionCard
-                  title={getTranslation(lang, currentSubstep.labelKey)}
-                  description={getTranslation(lang, currentSubstep.instructionsKey)}
-                  loading={!!updatingField}
-                  onAddNote={() => setNoteModalOpen(true)}
-                  onMarkComplete={handleMarkComplete}
-                  onSupport={handleSupport}
-                  canComplete={!currentSubstepCompleted}
+            {/* Middle row: Substeps stepper + Instruction card */}
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={8}>
+                <SubstepsStepper
+                  currentSubIndex={currentSubstepIndex}
+                  orientation={substepsOrientation}
+                  substeps={substepsUI}
+                  onChange={(idx) => {
+                    if (!substepsUI[idx]?.disabled) {
+                      setCurrentSubstepIndex(idx);
+                    }
+                  }}
                   t={t}
                 />
-              </div>
-            )}
-          </div>
-        </Col>
+              </Col>
+              <Col xs={24} lg={16}>
+                {currentSubstep && (
+                  <SubstepInstructionCard
+                    title={getTranslation(lang, currentSubstep.labelKey)}
+                    description={getTranslation(lang, currentSubstep.instructionsKey)}
+                    loading={!!updatingField}
+                    onAddNote={() => setNoteModalOpen(true)}
+                    onMarkComplete={handleMarkComplete}
+                    onSupport={handleSupport}
+                    canComplete={!currentSubstepCompleted}
+                    t={t}
+                  />
+                )}
+              </Col>
+            </Row>
 
-        {/* Right Column: Timeline + Notes + Progress + Agent stacked vertically */}
-        <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Timeline at top */}
-            <div style={{ height: "350px" }}>
-              <TimelineCard items={timelineItems} currentKey={currentTimelineKey} t={t} />
-            </div>
-
-            {/* Notes below timeline */}
-            <div style={{ height: "280px" }}>
-              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
-            </div>
-
-            {/* Progress and Agent side by side at bottom */}
+            {/* Bottom row: Overall progress + Agent */}
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
                 <OverallProgressCard
@@ -469,6 +454,18 @@ export default function OnboardingTrackerContent({
                 </div>
               </Col>
             </Row>
+          </div>
+        </Col>
+
+        {/* Right Column: Timeline + Notes */}
+        <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ height: 360 }}>
+              <TimelineCard items={timelineItems} currentKey={currentTimelineKey} t={t} />
+            </div>
+            <div style={{ height: 360 }}>
+              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
+            </div>
           </div>
         </Col>
       </Row>
