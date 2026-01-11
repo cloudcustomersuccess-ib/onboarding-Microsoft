@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Row, Col, Grid, Alert, Button, Spin, Modal, Input, message } from "antd";
+import { Row, Col, Alert, Button, Spin, Modal, Input, message } from "antd";
 import { useRouter } from "next/navigation";
 import { getOnboardingDetail, updateField, addNote } from "@/lib/api";
 import { getToken } from "@/lib/session";
@@ -16,9 +16,7 @@ import {
 import { useTrackerTranslations, getTranslation } from "@/lib/i18n/trackerTranslations";
 import type { Language } from "@/lib/i18n/trackerTranslations";
 import {
-  MainStepsCard,
-  SubstepsStepper,
-  SubstepInstructionCard,
+  CombinedTrackerCard,
   TimelineCard,
   NotesCard,
   OverallProgressCard,
@@ -29,8 +27,6 @@ import {
 } from "./TrackerCards";
 import { AgentCard } from "@/components/AgentCard/AgentCard";
 
-const { useBreakpoint } = Grid;
-
 interface OnboardingTrackerContentProps {
   clienteId: string;
 }
@@ -39,8 +35,6 @@ export default function OnboardingTrackerContent({
   clienteId,
 }: OnboardingTrackerContentProps) {
   const router = useRouter();
-  const screens = useBreakpoint();
-
   // State
   const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
   const [mirror, setMirror] = useState<Mirror | null>(null);
@@ -331,11 +325,6 @@ export default function OnboardingTrackerContent({
     window.open("mailto:customersuccess.es@tdsynnex.com", "_self");
   };
 
-  // Responsive orientation for substeps
-  const substepsOrientation: "horizontal" | "vertical" = screens.lg
-    ? "vertical"
-    : "horizontal";
-
   if (loading) {
     return (
       <div
@@ -381,51 +370,38 @@ export default function OnboardingTrackerContent({
   return (
     <div style={{ height: "calc(100vh - 168px)", overflow: "hidden" }}>
       <Row gutter={[16, 16]} style={{ height: "100%" }}>
-        {/* Left Column: General steps + Substeps + Instructions + Progress/Agent */}
+        {/* Left Column: Combined tracker card + Progress/Agent */}
         <Col xs={24} xl={16} style={{ height: "100%", overflow: "auto" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Top row: General Steps */}
-            <MainStepsCard
-              currentStepIndex={currentMainStepIndex}
-              stepsUI={mainStepsUI}
-              onSelectStep={(idx) => {
-                if (!mainStepsUI[idx]?.locked) {
-                  setCurrentMainStepIndex(idx);
-                }
-              }}
-              t={t}
-            />
-
-            {/* Middle row: Substeps stepper + Instruction card */}
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={8}>
-                <SubstepsStepper
+            {/* Combined tracker card */}
+            {currentSubstep && (
+              <div style={{ minHeight: 0 }}>
+                <CombinedTrackerCard
+                  currentStepIndex={currentMainStepIndex}
+                  stepsUI={mainStepsUI}
+                  onSelectStep={(idx) => {
+                    if (!mainStepsUI[idx]?.locked) {
+                      setCurrentMainStepIndex(idx);
+                    }
+                  }}
                   currentSubIndex={currentSubstepIndex}
-                  orientation={substepsOrientation}
                   substeps={substepsUI}
-                  onChange={(idx) => {
+                  onChangeSubstep={(idx) => {
                     if (!substepsUI[idx]?.disabled) {
                       setCurrentSubstepIndex(idx);
                     }
                   }}
+                  title={getTranslation(lang, currentSubstep.labelKey)}
+                  description={getTranslation(lang, currentSubstep.instructionsKey)}
+                  loading={!!updatingField}
+                  onAddNote={() => setNoteModalOpen(true)}
+                  onMarkComplete={handleMarkComplete}
+                  onSupport={handleSupport}
+                  canComplete={!currentSubstepCompleted}
                   t={t}
                 />
-              </Col>
-              <Col xs={24} lg={16}>
-                {currentSubstep && (
-                  <SubstepInstructionCard
-                    title={getTranslation(lang, currentSubstep.labelKey)}
-                    description={getTranslation(lang, currentSubstep.instructionsKey)}
-                    loading={!!updatingField}
-                    onAddNote={() => setNoteModalOpen(true)}
-                    onMarkComplete={handleMarkComplete}
-                    onSupport={handleSupport}
-                    canComplete={!currentSubstepCompleted}
-                    t={t}
-                  />
-                )}
-              </Col>
-            </Row>
+              </div>
+            )}
 
             {/* Bottom row: Overall progress + Agent */}
             <Row gutter={[16, 16]}>

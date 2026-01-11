@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Steps,
   Progress,
@@ -31,7 +31,7 @@ import {
 } from "@ant-design/icons";
 import type { TrackerTranslations } from "@/lib/i18n/trackerTranslations";
 
-const { Text, Title, Paragraph } = Typography;
+const { Text, Title } = Typography;
 
 const cardBaseStyle: React.CSSProperties = {
   borderRadius: 14,
@@ -60,71 +60,6 @@ export interface MainStepUI {
   locked?: boolean;
 }
 
-interface MainStepsCardProps {
-  currentStepIndex: number;
-  stepsUI: MainStepUI[];
-  onSelectStep: (index: number) => void;
-  t: TrackerTranslations;
-}
-
-export function MainStepsCard({
-  currentStepIndex,
-  stepsUI,
-  onSelectStep,
-  t,
-}: MainStepsCardProps) {
-  return (
-    <Card
-      title={t.ui.generalSteps}
-      styles={{ ...cardHeaderStyles, body: { paddingTop: 16 } }}
-      style={{ height: "100%", overflow: "hidden", ...cardBaseStyle }}
-    >
-      <Steps
-        current={currentStepIndex}
-        direction="vertical"
-        titlePlacement="vertical"
-        onChange={(idx) => {
-          const step = stepsUI[idx];
-          if (step?.locked) return;
-          onSelectStep(idx);
-        }}
-        items={stepsUI.map((s) => ({
-          title: (
-            <div style={{ marginTop: 8 }}>
-              <Text strong style={{ fontSize: 14 }}>
-                {s.title}
-              </Text>
-            </div>
-          ),
-          description: (
-            <div style={{ marginTop: 4 }}>
-              <Text
-                type={
-                  s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined
-                }
-                style={{ fontSize: 12 }}
-              >
-                {s.statusText}
-              </Text>
-            </div>
-          ),
-          percent: s.percent,
-          disabled: !!s.locked,
-          icon: s.locked ? (
-            <Tooltip title={t.ui.lockedTooltip}>
-              <LockOutlined />
-            </Tooltip>
-          ) : undefined,
-        }))}
-      />
-    </Card>
-  );
-}
-
-// ============================================================
-// 2) SUBSTEPS STEPPER
-// ============================================================
-
 export interface SubstepUI {
   key: string;
   title: string;
@@ -132,50 +67,17 @@ export interface SubstepUI {
   done: boolean;
 }
 
-interface SubstepsStepperProps {
+// ============================================================
+// 2) COMBINED CARD (MAIN STEPS + SUBSTEPS + INSTRUCTIONS)
+// ============================================================
+
+interface CombinedTrackerCardProps {
+  currentStepIndex: number;
+  stepsUI: MainStepUI[];
+  onSelectStep: (index: number) => void;
   currentSubIndex: number;
-  orientation: "horizontal" | "vertical";
   substeps: SubstepUI[];
-  onChange: (idx: number) => void;
-  t: TrackerTranslations;
-}
-
-export function SubstepsStepper({
-  currentSubIndex,
-  orientation,
-  substeps,
-  onChange,
-  t,
-}: SubstepsStepperProps) {
-  return (
-    <Card
-      title={t.ui.substeps}
-      style={{ overflow: "hidden", ...cardBaseStyle }}
-      styles={{ ...cardHeaderStyles, body: { paddingTop: 16 } }}
-    >
-      <Steps
-        current={currentSubIndex}
-        onChange={(idx) => {
-          if (substeps[idx]?.disabled) return;
-          onChange(idx);
-        }}
-        direction={orientation}
-        items={substeps.map((s, idx) => ({
-          title: s.title,
-          disabled: s.disabled,
-          status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
-          icon: s.done ? <CheckCircleFilled /> : undefined,
-        }))}
-      />
-    </Card>
-  );
-}
-
-// ============================================================
-// 3) SUBSTEP INSTRUCTION CARD
-// ============================================================
-
-interface SubstepInstructionCardProps {
+  onChangeSubstep: (idx: number) => void;
   title: string;
   description: React.ReactNode;
   loading: boolean;
@@ -186,7 +88,13 @@ interface SubstepInstructionCardProps {
   t: TrackerTranslations;
 }
 
-export function SubstepInstructionCard({
+export function CombinedTrackerCard({
+  currentStepIndex,
+  stepsUI,
+  onSelectStep,
+  currentSubIndex,
+  substeps,
+  onChangeSubstep,
   title,
   description,
   loading,
@@ -195,11 +103,10 @@ export function SubstepInstructionCard({
   onSupport,
   canComplete,
   t,
-}: SubstepInstructionCardProps) {
+}: CombinedTrackerCardProps) {
   return (
     <Card
-      title={title}
-      extra={<Tag icon={<FileTextOutlined />} color="blue">{t.ui.instructions}</Tag>}
+      title={t.ui.generalSteps}
       style={{
         height: "100%",
         display: "flex",
@@ -217,38 +124,127 @@ export function SubstepInstructionCard({
         ...cardHeaderStyles,
       }}
     >
-      <div style={{ flex: 1, overflow: "auto", marginBottom: 8 }}>
-        {loading ? (
-          <Skeleton active />
-        ) : (
-          <Typography.Paragraph style={{ fontSize: 14, lineHeight: 1.6 }}>
-            {description}
-          </Typography.Paragraph>
-        )}
+      <Steps
+        current={currentStepIndex}
+        titlePlacement="vertical"
+        onChange={(idx) => {
+          const step = stepsUI[idx];
+          if (step?.locked) return;
+          onSelectStep(idx);
+        }}
+        items={stepsUI.map((s) => ({
+          title: (
+            <Text strong style={{ fontSize: 14 }}>
+              {s.title}
+            </Text>
+          ),
+          description: (
+            <Text
+              type={s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined}
+              style={{ fontSize: 12 }}
+            >
+              {s.statusText}
+            </Text>
+          ),
+          percent: s.percent,
+          disabled: !!s.locked,
+          icon: s.locked ? (
+            <Tooltip title={t.ui.lockedTooltip}>
+              <LockOutlined />
+            </Tooltip>
+          ) : undefined,
+        }))}
+      />
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.8fr) minmax(0, 1fr)",
+          gap: 16,
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <Title level={5} style={{ margin: 0 }}>
+              {title}
+            </Title>
+            <Tag icon={<FileTextOutlined />} color="blue">
+              {t.ui.instructions}
+            </Tag>
+          </div>
+
+          <div style={{ flex: 1, overflow: "auto" }}>
+            {loading ? (
+              <Skeleton active />
+            ) : (
+              <Typography.Paragraph style={{ fontSize: 14, lineHeight: 1.6 }}>
+                {description}
+              </Typography.Paragraph>
+            )}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              paddingTop: 10,
+              borderTop: "1px solid #eef0f3",
+              background: "#fbfbfd",
+              borderRadius: 12,
+            }}
+          >
+            <Flex align="center" justify="space-between" wrap="wrap" gap={8}>
+              <Space>
+                <Button type="text" icon={<MessageOutlined />} onClick={onAddNote}>
+                  {t.ui.addNote}
+                </Button>
+                <Button type="text" icon={<CustomerServiceOutlined />} onClick={onSupport}>
+                  {t.ui.support}
+                </Button>
+                <Button
+                  type="text"
+                  icon={<CheckOutlined />}
+                  onClick={onMarkComplete}
+                  disabled={!canComplete}
+                  style={{ color: canComplete ? "#1677ff" : undefined }}
+                >
+                  {t.ui.markComplete}
+                </Button>
+              </Space>
+            </Flex>
+          </div>
+        </div>
+
+        <div style={{ overflow: "auto" }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {t.ui.substeps}
+          </Text>
+          <Steps
+            current={currentSubIndex}
+            direction="vertical"
+            onChange={(idx) => {
+              if (substeps[idx]?.disabled) return;
+              onChangeSubstep(idx);
+            }}
+            items={substeps.map((s, idx) => ({
+              title: s.title,
+              disabled: s.disabled,
+              status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
+              icon: s.done ? <CheckCircleFilled /> : undefined,
+            }))}
+          />
+        </div>
       </div>
-
-      <Divider style={{ margin: "8px 0" }} />
-
-      <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-        <Space wrap>
-          <Button icon={<MessageOutlined />} onClick={onAddNote}>
-            {t.ui.addNote}
-          </Button>
-          <Button icon={<CustomerServiceOutlined />} onClick={onSupport}>
-            {t.ui.support}
-          </Button>
-        </Space>
-
-        <Button
-          type="primary"
-          size="large"
-          icon={<CheckOutlined />}
-          onClick={onMarkComplete}
-          disabled={!canComplete}
-        >
-          {t.ui.markComplete}
-        </Button>
-      </Flex>
     </Card>
   );
 }
