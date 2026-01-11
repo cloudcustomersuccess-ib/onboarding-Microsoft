@@ -24,14 +24,18 @@ body {
   --tracker-card-shadow: 0 10px 24px rgba(24, 39, 75, 0.06);
   --tracker-accent: #005657;
   --tracker-accent-strong: #003031;
+  --tracker-text-primary: rgba(0, 0, 0, 0.88);
+  --tracker-text-secondary: rgba(0, 0, 0, 0.65);
 }
 
 [data-theme="dark"] {
-  --tracker-card-bg: #1f1f1f;
-  --tracker-card-border: #303030;
-  --tracker-card-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-  --tracker-accent: #55c5c2;
-  --tracker-accent-strong: #9de8e3;
+  --tracker-card-bg: rgba(255, 255, 255, 0.04);
+  --tracker-card-border: rgba(255, 255, 255, 0.12);
+  --tracker-card-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  --tracker-accent: #00a5a3;
+  --tracker-accent-strong: #00c9c7;
+  --tracker-text-primary: rgba(255, 255, 255, 0.88);
+  --tracker-text-secondary: rgba(255, 255, 255, 0.65);
 }
 
 .tracker-note-delete {
@@ -41,6 +45,16 @@ body {
 
 .tracker-note-item:hover .tracker-note-delete {
   opacity: 1;
+}
+
+.user-info-button:hover {
+  background-color: var(--tracker-accent) !important;
+  color: white !important;
+  border-color: var(--tracker-accent) !important;
+}
+
+.user-info-button:hover .anticon {
+  color: white !important;
 }
 
 a {

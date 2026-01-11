@@ -23,7 +23,7 @@ import {
   type SubstepUI,
   type NoteUI,
 } from "./TrackerCards";
-import { AgentCard } from "@/components/AgentCard/AgentCard";
+import { UserInfoCard } from "@/components/UserInfoCard/UserInfoCard";
 
 interface OnboardingTrackerContentProps {
   clienteId: string;
@@ -328,46 +328,41 @@ export default function OnboardingTrackerContent({
   }
 
   return (
-    <div style={{ height: "calc(100vh - 168px)", overflow: "hidden" }}>
-      <Row gutter={[16, 16]} style={{ height: "100%" }}>
-        {/* Left Column: Combined tracker card + Progress/Agent */}
-        <Col xs={24} xl={16} style={{ height: "100%", overflow: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            {/* Combined tracker card */}
-            {currentSubstep && (
-              <div style={{ minHeight: 0, flex: 1 }}>
-                <CombinedTrackerCard
-                  currentStepIndex={currentMainStepIndex}
-                  stepsUI={mainStepsUI}
-                  onSelectStep={(idx) => {
-                    if (!mainStepsUI[idx]?.locked) {
-                      setCurrentMainStepIndex(idx);
-                    }
-                  }}
-                  currentSubIndex={currentSubstepIndex}
-                  substeps={substepsUI}
-                  onChangeSubstep={(idx) => {
-                    if (!substepsUI[idx]?.disabled) {
-                      setCurrentSubstepIndex(idx);
-                    }
-                  }}
-                  title={getTranslation(lang, currentSubstep.labelKey)}
-                  description={getTranslation(lang, currentSubstep.instructionsKey)}
-                  loading={!!updatingField}
-                  noteContextKey={currentSubstep.fieldKey}
-                  onSaveNote={handleAddSubstepNote}
-                  onMarkComplete={handleMarkComplete}
-                  onSupport={handleSupport}
-                  canComplete={!currentSubstepCompleted}
-                  t={t}
-                />
-              </div>
-            )}
-          </div>
+    <div style={{ height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <Row gutter={[16, 16]} style={{ flex: 1, minHeight: 0 }}>
+        {/* Left Column: Combined tracker card */}
+        <Col xs={24} xl={16} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          {currentSubstep && (
+            <CombinedTrackerCard
+              currentStepIndex={currentMainStepIndex}
+              stepsUI={mainStepsUI}
+              onSelectStep={(idx) => {
+                if (!mainStepsUI[idx]?.locked) {
+                  setCurrentMainStepIndex(idx);
+                }
+              }}
+              currentSubIndex={currentSubstepIndex}
+              substeps={substepsUI}
+              onChangeSubstep={(idx) => {
+                if (!substepsUI[idx]?.disabled) {
+                  setCurrentSubstepIndex(idx);
+                }
+              }}
+              title={getTranslation(lang, currentSubstep.labelKey)}
+              description={getTranslation(lang, currentSubstep.instructionsKey)}
+              loading={!!updatingField}
+              noteContextKey={currentSubstep.fieldKey}
+              onSaveNote={handleAddSubstepNote}
+              onMarkComplete={handleMarkComplete}
+              onSupport={handleSupport}
+              canComplete={!currentSubstepCompleted}
+              t={t}
+            />
+          )}
         </Col>
 
-        {/* Right Column: Progress/Agent + Notes */}
-        <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
+        {/* Right Column: Progress/User Info + Notes */}
+        <Col xs={24} xl={8} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
@@ -378,30 +373,21 @@ export default function OnboardingTrackerContent({
           >
             <Row gutter={[16, 16]} style={{ flexShrink: 0 }}>
               <Col xs={24} lg={12}>
-                <div style={{ width: "100%", aspectRatio: "1 / 1" }}>
-                  <OverallProgressCard
-                    percent={overallProgress.percent}
-                    done={overallProgress.done}
-                    total={overallProgress.total}
-                    t={t}
-                  />
-                </div>
+                <OverallProgressCard
+                  percent={overallProgress.percent}
+                  done={overallProgress.done}
+                  total={overallProgress.total}
+                  t={t}
+                />
               </Col>
               <Col xs={24} lg={12}>
-                <div style={{ width: "100%", aspectRatio: "1 / 1" }}>
-                  <AgentCard
-                    name="Laura Gómez"
-                    role="Customer Success Manager"
-                    about={
-                      lang === "es"
-                        ? "Tu punto de contacto para completar el alta y resolver bloqueos."
-                        : lang === "en"
-                        ? "Your contact point to complete onboarding and resolve issues."
-                        : "Seu ponto de contacto para concluir a integração e resolver problemas."
-                    }
-                    email="customersuccess.es@tdsynnex.com"
-                  />
-                </div>
+                <UserInfoCard
+                  name="Laura Gómez"
+                  jobTitle="Customer Success Manager"
+                  email="customersuccess.es@tdsynnex.com"
+                  phone="+34 900 123 456"
+                  secondaryEmail="support@tdsynnex.com"
+                />
               </Col>
             </Row>
             <div style={{ minHeight: 0, flex: 1 }}>

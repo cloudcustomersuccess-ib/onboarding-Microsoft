@@ -197,10 +197,11 @@ export function CombinedTrackerCard({
         }}
       >
         <div style={{ overflow: "auto" }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
             {t.ui.substeps}
           </Text>
           <Steps
+            type="dot"
             current={currentSubIndex}
             direction="vertical"
             onChange={(idx) => {
@@ -209,10 +210,11 @@ export function CombinedTrackerCard({
             }}
             items={substeps.map((s, idx) => ({
               title: s.title,
+              description: s.done ? "Completado" : undefined,
               disabled: s.disabled,
               status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
-              icon: s.done ? <CheckCircleFilled /> : undefined,
             }))}
+            style={{ flex: "auto" }}
           />
         </div>
 
@@ -495,7 +497,7 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
       styles={{ ...cardHeaderStyles, body: { height: "100%", overflow: "hidden" } }}
     >
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <div style={{ flex: 1, overflow: "auto", paddingRight: 4 }}>
+        <div style={{ flex: 1, overflow: "auto", paddingRight: 4, minHeight: 0 }}>
           {showEmptyState ? (
             <div
               style={{
@@ -555,6 +557,12 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
                 </List.Item>
               )}
             />
+          ) : open ? (
+            <div style={{ padding: "12px 0" }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t.ui.writeNote}
+              </Text>
+            </div>
           ) : (
             <div />
           )}
@@ -563,9 +571,10 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
         {open && (
           <div
             style={{
-              marginTop: notes.length > 0 ? 12 : 0,
+              marginTop: notes.length > 0 || !showEmptyState ? 12 : 0,
               paddingTop: 12,
-              borderTop: "1px solid var(--tracker-card-border)",
+              borderTop: notes.length > 0 ? "1px solid var(--tracker-card-border)" : "none",
+              flexShrink: 0,
             }}
           >
             <Input.TextArea
@@ -573,6 +582,7 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
               onChange={(e) => setValue(e.target.value)}
               placeholder={t.ui.writeNote}
               autoSize={{ minRows: 3, maxRows: 8 }}
+              autoFocus
             />
             <Flex justify="flex-end" gap={8} style={{ marginTop: 8 }}>
               <Button
@@ -614,25 +624,42 @@ export function OverallProgressCard({
   return (
     <Card
       title={t.ui.overallProgress}
-      style={{ height: "100%", ...cardBaseStyle }}
+      style={{
+        height: "100%",
+        ...cardBaseStyle,
+        minHeight: "250px"
+      }}
       styles={{
         ...cardHeaderStyles,
-        body: { display: "flex", alignItems: "center", justifyContent: "center" },
+        body: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px 16px",
+          height: "100%"
+        },
       }}
     >
-      <Flex vertical align="center" justify="center" gap={16}>
+      <Flex vertical align="center" justify="center" gap={20} style={{ width: "100%" }}>
         <Progress
-          type="dashboard"
+          type="circle"
           percent={percent}
-          size={100}
+          size={120}
+          strokeWidth={8}
           strokeColor={{
             "0%": "var(--tracker-accent)",
             "100%": "var(--tracker-accent-strong)",
           }}
+          trailColor="var(--tracker-card-border)"
           format={(percent) => (
             <div style={{ textAlign: "center" }}>
               <div
-                style={{ fontSize: 22, fontWeight: "bold", color: "var(--tracker-accent-strong)" }}
+                style={{
+                  fontSize: 28,
+                  fontWeight: "bold",
+                  color: "var(--tracker-accent-strong)",
+                  lineHeight: 1
+                }}
               >
                 {percent}%
               </div>
@@ -640,10 +667,10 @@ export function OverallProgressCard({
           )}
         />
         <div style={{ textAlign: "center" }}>
-          <Title level={4} style={{ margin: 0, color: "var(--tracker-accent-strong)" }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
             {done} {t.ui.of} {total}
           </Title>
-          <Text type="secondary" style={{ fontSize: 13 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
             {t.ui.substepsCompleted}
           </Text>
         </div>
