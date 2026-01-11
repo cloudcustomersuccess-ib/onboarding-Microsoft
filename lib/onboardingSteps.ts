@@ -3,6 +3,8 @@
  * Defines the structure of all main steps and substeps with their field keys and types
  */
 
+import { normalizeManufacturer, type ManufacturerKey } from "./manufacturer";
+
 export type FieldType = "BOOLEAN" | "TEXT";
 export type Manufacturer = "Microsoft" | "AWS" | "Google";
 
@@ -158,22 +160,23 @@ export const MAIN_STEPS: MainStepDefinition[] = [
 
 /**
  * Get the appropriate Step 2 based on manufacturer
+ * Uses robust normalization to handle various manufacturer string formats
  */
 export function getStep2ForManufacturer(
   manufacturer?: string
 ): MainStepDefinition | null {
-  const mfr = manufacturer as Manufacturer | undefined;
+  // Normalize raw manufacturer string to canonical key
+  const manufacturerKey: ManufacturerKey = normalizeManufacturer(manufacturer);
 
-  if (mfr === "Microsoft") {
-    return MAIN_STEPS.find((s) => s.key === "step2_microsoft") || null;
-  } else if (mfr === "AWS") {
-    return MAIN_STEPS.find((s) => s.key === "step2_aws") || null;
-  } else if (mfr === "Google") {
-    return MAIN_STEPS.find((s) => s.key === "step2_google") || null;
-  }
+  // Map canonical key to step definition
+  const stepKeyMap: Record<ManufacturerKey, string> = {
+    MICROSOFT: "step2_microsoft",
+    AWS: "step2_aws",
+    GOOGLE: "step2_google",
+  };
 
-  // Default to Microsoft if manufacturer is unknown
-  return MAIN_STEPS.find((s) => s.key === "step2_microsoft") || null;
+  const stepKey = stepKeyMap[manufacturerKey];
+  return MAIN_STEPS.find((s) => s.key === stepKey) || null;
 }
 
 /**

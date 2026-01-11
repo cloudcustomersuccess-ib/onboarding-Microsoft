@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Row, Col, Alert, Button, Spin, message } from "antd";
+import { Row, Col, Alert, Button, Spin, message, Tag } from "antd";
 import { useRouter } from "next/navigation";
 import { getOnboardingDetail, updateField, addNote, deleteNote } from "@/lib/api";
 import { getToken, getUser } from "@/lib/session";
@@ -13,6 +13,7 @@ import {
   type MainStepDefinition,
   type SubstepDefinition,
 } from "@/lib/onboardingSteps";
+import { normalizeManufacturer, getManufacturerDisplayName, isValidManufacturer, type ManufacturerKey } from "@/lib/manufacturer";
 import { useTrackerTranslations, getTranslation } from "@/lib/i18n/trackerTranslations";
 import type { Language } from "@/lib/i18n/trackerTranslations";
 import {
@@ -116,6 +117,11 @@ export default function OnboardingTrackerContent({
     return step1Percent < 100 || step2Percent < 100;
   }, [effectiveSteps, mirror]);
 
+  // Get manufacturer key for dynamic Step 2 title
+  const manufacturerKey: ManufacturerKey = useMemo(() => {
+    return normalizeManufacturer(onboarding?.Manufacturer);
+  }, [onboarding]);
+
   // Build main steps UI
   const mainStepsUI: MainStepUI[] = useMemo(() => {
     return effectiveSteps.map((step, idx) => {
@@ -123,15 +129,22 @@ export default function OnboardingTrackerContent({
       const statusText = getStepStatus(percent);
       const locked = idx === 2 && isStep3Locked;
 
+      // Use manufacturer-specific title for Step 2
+      let title = getTranslation(lang, step.labelKey);
+      if (idx === 1 && step.key.startsWith("step2_")) {
+        const manufacturerTitleKey = manufacturerKey.toLowerCase() as "microsoft" | "aws" | "google";
+        title = t.steps.step2[manufacturerTitleKey] || title;
+      }
+
       return {
         key: step.key,
-        title: getTranslation(lang, step.labelKey),
+        title,
         statusText,
         percent,
         locked,
       };
     });
-  }, [effectiveSteps, mirror, isStep3Locked, lang, t]);
+  }, [effectiveSteps, mirror, isStep3Locked, lang, t, manufacturerKey]);
 
   // Get current main step
   const currentMainStep = effectiveSteps[currentMainStepIndex];
@@ -327,8 +340,23 @@ export default function OnboardingTrackerContent({
     );
   }
 
+  // Show warning if manufacturer is invalid/unknown
+  const showManufacturerWarning = useMemo(() => {
+    return onboarding?.Manufacturer && !isValidManufacturer(onboarding.Manufacturer);
+  }, [onboarding]);
+
   return (
     <div style={{ height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {showManufacturerWarning && (
+        <Alert
+          message="Manufacturer desconocido"
+          description={`El fabricante "${onboarding?.Manufacturer}" no es reconocido. Se está usando Microsoft por defecto.`}
+          type="warning"
+          showIcon
+          closable
+          style={{ marginBottom: 16 }}
+        />
+      )}
       <Row gutter={[16, 16]} style={{ flex: 1, minHeight: 0 }}>
         {/* Left Column: Combined tracker card */}
         <Col xs={24} xl={16} style={{ height: "100%", display: "flex", flexDirection: "column" }}>

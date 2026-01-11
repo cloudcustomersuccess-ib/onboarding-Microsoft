@@ -13,6 +13,9 @@ export interface TrackerTranslations {
     };
     step2: {
       title: string;
+      microsoft: string;
+      aws: string;
+      google: string;
     };
     step3: {
       title: string;
@@ -130,7 +133,12 @@ export const translations: Record<Language, TrackerTranslations> = {
   es: {
     steps: {
       step1: { title: "Paso 1: Configuración Inicial" },
-      step2: { title: "Paso 2: Configuración del Fabricante" },
+      step2: {
+        title: "Paso 2: Configuración del Fabricante",
+        microsoft: "Paso 2: Microsoft Partner Center",
+        aws: "Paso 2: AWS Partner Central",
+        google: "Paso 2: Partner Sales Console (Google)",
+      },
       step3: { title: "Paso 3: Finalización" },
     },
     substeps: {
@@ -243,7 +251,12 @@ export const translations: Record<Language, TrackerTranslations> = {
   en: {
     steps: {
       step1: { title: "Step 1: Initial Setup" },
-      step2: { title: "Step 2: Manufacturer Setup" },
+      step2: {
+        title: "Step 2: Manufacturer Setup",
+        microsoft: "Step 2: Microsoft Partner Center",
+        aws: "Step 2: AWS Partner Central",
+        google: "Step 2: Partner Sales Console (Google)",
+      },
       step3: { title: "Step 3: Finalization" },
     },
     substeps: {
@@ -354,7 +367,12 @@ export const translations: Record<Language, TrackerTranslations> = {
   pt: {
     steps: {
       step1: { title: "Passo 1: Configuração Inicial" },
-      step2: { title: "Passo 2: Configuração do Fabricante" },
+      step2: {
+        title: "Passo 2: Configuração do Fabricante",
+        microsoft: "Passo 2: Microsoft Partner Center",
+        aws: "Passo 2: AWS Partner Central",
+        google: "Passo 2: Partner Sales Console (Google)",
+      },
       step3: { title: "Passo 3: Finalização" },
     },
     substeps: {

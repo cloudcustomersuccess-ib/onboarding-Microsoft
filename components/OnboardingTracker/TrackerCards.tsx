@@ -133,12 +133,7 @@ export function CombinedTrackerCard({
 
   return (
     <Card
-      title={
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ri-road-map-line" style={{ fontSize: 18 }} />
-          {t.ui.generalSteps}
-        </span>
-      }
+      title={t.ui.generalSteps}
       style={{
         height: "100%",
         display: "flex",
@@ -199,7 +194,6 @@ export function CombinedTrackerCard({
           gap: 16,
           flex: 1,
           minHeight: 0,
-          alignItems: "start",
         }}
       >
         <div style={{ overflow: "auto" }}>
@@ -229,11 +223,11 @@ export function CombinedTrackerCard({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "flex-start",
+              alignItems: "center",
               marginBottom: 8,
             }}
           >
-            <Title level={5} style={{ margin: 0, marginTop: "-2px" }}>
+            <Title level={5} style={{ margin: 0 }}>
               {title}
             </Title>
             <Tag icon={<FileTextOutlined />} color="blue">
@@ -373,12 +367,7 @@ export function TimelineCard({ items, currentKey, t }: TimelineCardProps) {
 
   return (
     <Card
-      title={
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ri-time-line" style={{ fontSize: 18 }} />
-          {t.ui.timeline}
-        </span>
-      }
+      title={t.ui.timeline}
       style={{
         height: "100%",
         overflow: "hidden",
@@ -498,12 +487,7 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
 
   return (
     <Card
-      title={
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ri-sticky-note-line" style={{ fontSize: 18 }} />
-          {t.ui.generalNotes}
-        </span>
-      }
+      title={t.ui.generalNotes}
       extra={
         <Button type="primary" onClick={() => setOpen(true)} size="small">
           {t.ui.addNote}
@@ -639,17 +623,10 @@ export function OverallProgressCard({
 }: OverallProgressCardProps) {
   return (
     <Card
-      title={
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ri-pie-chart-line" style={{ fontSize: 18 }} />
-          {t.ui.overallProgress}
-        </span>
-      }
+      title={t.ui.overallProgress}
       style={{
         height: "100%",
         ...cardBaseStyle,
-        aspectRatio: "1 / 1",
-        maxHeight: "300px"
       }}
       styles={{
         ...cardHeaderStyles,
@@ -657,8 +634,7 @@ export function OverallProgressCard({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "16px",
-          height: "100%"
+          padding: "24px",
         },
       }}
     >

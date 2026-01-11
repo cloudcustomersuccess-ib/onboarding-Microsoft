@@ -209,7 +209,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               justifyContent: "center",
               padding: collapsed ? "16px 8px" : "16px 24px",
-              borderBottom: "none",
+              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #f0f0f0",
             }}
           >
             {!collapsed ? (

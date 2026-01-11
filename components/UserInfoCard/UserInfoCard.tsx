@@ -31,29 +31,17 @@ export function UserInfoCard({
 }: UserInfoCardProps) {
   return (
     <Card
-      title={
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ri-user-star-line" style={{ fontSize: 18 }} />
-          Agent
-        </span>
-      }
       style={{
         ...cardBaseStyle,
-        aspectRatio: "1 / 1",
-        maxHeight: "300px"
+        minHeight: "250px",
       }}
       styles={{
-        header: {
-          borderBottom: "1px solid var(--tracker-card-border)",
-          paddingTop: 14,
-          paddingBottom: 12,
-        },
         body: {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
           height: "100%",
-          padding: "20px",
+          padding: "24px",
         },
       }}
     >
@@ -66,45 +54,44 @@ export function UserInfoCard({
         </Text>
       </Space>
 
-      <div>
-        <Divider style={{ margin: "0 0 16px 0", borderColor: "var(--tracker-card-border)" }} />
-        <Space size={8} style={{ width: "100%", justifyContent: "center" }}>
-          {phone && (
-            <Tooltip title={phone} placement="bottom">
-              <Button
-                type="default"
-                icon={<PhoneOutlined />}
-                shape="circle"
-                size="large"
-                className="user-info-icon-button"
-                onClick={() => window.open(`tel:${phone}`, "_self")}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title={email} placement="bottom">
+      <Divider style={{ margin: "16px 0", borderColor: "var(--tracker-card-border)" }} />
+
+      <Space size={8} style={{ width: "100%", justifyContent: "center" }}>
+        {phone && (
+          <Tooltip title={phone} placement="bottom">
+            <Button
+              type="default"
+              icon={<PhoneOutlined />}
+              shape="circle"
+              size="large"
+              className="user-info-icon-button"
+              onClick={() => window.open(`tel:${phone}`, "_self")}
+            />
+          </Tooltip>
+        )}
+        <Tooltip title={email} placement="bottom">
+          <Button
+            type="default"
+            icon={<MailOutlined />}
+            shape="circle"
+            size="large"
+            className="user-info-icon-button"
+            onClick={() => window.open(`mailto:${email}`, "_self")}
+          />
+        </Tooltip>
+        {secondaryEmail && (
+          <Tooltip title={secondaryEmail} placement="bottom">
             <Button
               type="default"
               icon={<MailOutlined />}
               shape="circle"
               size="large"
               className="user-info-icon-button"
-              onClick={() => window.open(`mailto:${email}`, "_self")}
+              onClick={() => window.open(`mailto:${secondaryEmail}`, "_self")}
             />
           </Tooltip>
-          {secondaryEmail && (
-            <Tooltip title={secondaryEmail} placement="bottom">
-              <Button
-                type="default"
-                icon={<MailOutlined />}
-                shape="circle"
-                size="large"
-                className="user-info-icon-button"
-                onClick={() => window.open(`mailto:${secondaryEmail}`, "_self")}
-              />
-            </Tooltip>
-          )}
-        </Space>
-      </div>
+        )}
+      </Space>
     </Card>
   );
 }
