@@ -245,6 +245,7 @@ export function CombinedTrackerCard({
               </Space>
             </Flex>
           </div>
+        </div>
       </div>
     </Card>
   );
