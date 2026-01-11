@@ -186,7 +186,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           },
           Layout: {
             siderBg: isDarkMode ? "#141414" : "#ffffff",
-            headerBg: isDarkMode ? "#1f1f1f" : "#ffffff",
+            headerBg: isDarkMode ? "#141414" : "#ffffff",
           },
         },
       }}
@@ -268,7 +268,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               position: "sticky",
               top: 0,
               zIndex: 999,
-              height: "72px",
+              height: "64px",
+              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #f0f0f0",
             }}
           >
             {/* Left: Theme Toggle */}

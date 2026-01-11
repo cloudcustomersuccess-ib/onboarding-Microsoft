@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Typography, Space, Button } from "antd";
+import { Card, Typography, Space, Button, Tooltip, Divider } from "antd";
 import { MailOutlined, PhoneOutlined } from "@ant-design/icons";
 
 const { Text, Title } = Typography;
@@ -45,68 +45,51 @@ export function UserInfoCard({
         },
       }}
     >
-      <Space direction="vertical" size={4} style={{ marginBottom: 16 }}>
+      <Space direction="vertical" size={4} style={{ textAlign: "center", width: "100%" }}>
         <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
           {name}
         </Title>
         <Text type="secondary" style={{ fontSize: 13 }}>
           {jobTitle}
         </Text>
-        <Text style={{ fontSize: 13, marginTop: 4 }}>{email}</Text>
       </Space>
 
-      <Space direction="vertical" size={8} style={{ width: "100%" }}>
+      <Divider style={{ margin: "16px 0", borderColor: "var(--tracker-card-border)" }} />
+
+      <Space size={8} style={{ width: "100%", justifyContent: "center" }}>
         {phone && (
-          <Button
-            type="default"
-            icon={<PhoneOutlined />}
-            block
-            className="user-info-button"
-            style={{
-              borderColor: "var(--tracker-accent)",
-              color: "var(--tracker-accent)",
-            }}
-            styles={{
-              icon: { color: "var(--tracker-accent)" }
-            }}
-            onClick={() => window.open(`tel:${phone}`, "_self")}
-          >
-            {phone}
-          </Button>
+          <Tooltip title={phone} placement="bottom">
+            <Button
+              type="default"
+              icon={<PhoneOutlined />}
+              shape="circle"
+              size="large"
+              className="user-info-icon-button"
+              onClick={() => window.open(`tel:${phone}`, "_self")}
+            />
+          </Tooltip>
         )}
-        <Button
-          type="default"
-          icon={<MailOutlined />}
-          block
-          className="user-info-button"
-          style={{
-            borderColor: "var(--tracker-accent)",
-            color: "var(--tracker-accent)",
-          }}
-          styles={{
-            icon: { color: "var(--tracker-accent)" }
-          }}
-          onClick={() => window.open(`mailto:${email}`, "_self")}
-        >
-          {email}
-        </Button>
-        {secondaryEmail && (
+        <Tooltip title={email} placement="bottom">
           <Button
             type="default"
             icon={<MailOutlined />}
-            block
-            className="user-info-button"
-            style={{
-              borderColor: "var(--tracker-accent)",
-              color: "var(--tracker-accent)",
-            }}
-            styles={{
-              icon: { color: "var(--tracker-accent)" }
-            }}
-            onClick={() => window.open(`mailto:${secondaryEmail}`, "_self")}
-          >
-            {secondaryEmail}
-          </Button>
+            shape="circle"
+            size="large"
+            className="user-info-icon-button"
+            onClick={() => window.open(`mailto:${email}`, "_self")}
+          />
+        </Tooltip>
+        {secondaryEmail && (
+          <Tooltip title={secondaryEmail} placement="bottom">
+            <Button
+              type="default"
+              icon={<MailOutlined />}
+              shape="circle"
+              size="large"
+              className="user-info-icon-button"
+              onClick={() => window.open(`mailto:${secondaryEmail}`, "_self")}
+            />
+          </Tooltip>
         )}
       </Space>
     </Card>

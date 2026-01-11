@@ -493,8 +493,8 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
           {t.ui.addNote}
         </Button>
       }
-      style={{ height: "100%", overflow: "hidden", ...cardBaseStyle }}
-      styles={{ ...cardHeaderStyles, body: { height: "100%", overflow: "hidden" } }}
+      style={{ height: "100%", display: "flex", flexDirection: "column", ...cardBaseStyle }}
+      styles={{ ...cardHeaderStyles, body: { flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: "16px" } }}
     >
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
         <div style={{ flex: 1, overflow: "auto", paddingRight: 4, minHeight: 0 }}>
