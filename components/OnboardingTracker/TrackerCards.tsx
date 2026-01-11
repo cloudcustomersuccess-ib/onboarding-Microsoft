@@ -133,7 +133,12 @@ export function CombinedTrackerCard({
 
   return (
     <Card
-      title={t.ui.generalSteps}
+      title={
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <i className="ri-road-map-line" style={{ fontSize: 18 }} />
+          {t.ui.generalSteps}
+        </span>
+      }
       style={{
         height: "100%",
         display: "flex",
@@ -194,6 +199,7 @@ export function CombinedTrackerCard({
           gap: 16,
           flex: 1,
           minHeight: 0,
+          alignItems: "start",
         }}
       >
         <div style={{ overflow: "auto" }}>
@@ -223,11 +229,11 @@ export function CombinedTrackerCard({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
+              alignItems: "flex-start",
               marginBottom: 8,
             }}
           >
-            <Title level={5} style={{ margin: 0 }}>
+            <Title level={5} style={{ margin: 0, marginTop: "-2px" }}>
               {title}
             </Title>
             <Tag icon={<FileTextOutlined />} color="blue">
@@ -367,7 +373,12 @@ export function TimelineCard({ items, currentKey, t }: TimelineCardProps) {
 
   return (
     <Card
-      title={t.ui.timeline}
+      title={
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <i className="ri-time-line" style={{ fontSize: 18 }} />
+          {t.ui.timeline}
+        </span>
+      }
       style={{
         height: "100%",
         overflow: "hidden",
@@ -487,7 +498,12 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
 
   return (
     <Card
-      title={t.ui.generalNotes}
+      title={
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <i className="ri-sticky-note-line" style={{ fontSize: 18 }} />
+          {t.ui.generalNotes}
+        </span>
+      }
       extra={
         <Button type="primary" onClick={() => setOpen(true)} size="small">
           {t.ui.addNote}
@@ -623,11 +639,17 @@ export function OverallProgressCard({
 }: OverallProgressCardProps) {
   return (
     <Card
-      title={t.ui.overallProgress}
+      title={
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <i className="ri-pie-chart-line" style={{ fontSize: 18 }} />
+          {t.ui.overallProgress}
+        </span>
+      }
       style={{
         height: "100%",
         ...cardBaseStyle,
-        minHeight: "250px"
+        aspectRatio: "1 / 1",
+        maxHeight: "300px"
       }}
       styles={{
         ...cardHeaderStyles,
@@ -635,16 +657,16 @@ export function OverallProgressCard({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "24px 16px",
+          padding: "16px",
           height: "100%"
         },
       }}
     >
-      <Flex vertical align="center" justify="center" gap={20} style={{ width: "100%" }}>
+      <Flex vertical align="center" justify="center" gap={16} style={{ width: "100%" }}>
         <Progress
           type="circle"
           percent={percent}
-          size={120}
+          size={100}
           strokeWidth={8}
           strokeColor={{
             "0%": "var(--tracker-accent)",
@@ -655,7 +677,7 @@ export function OverallProgressCard({
             <div style={{ textAlign: "center" }}>
               <div
                 style={{
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: "bold",
                   color: "var(--tracker-accent-strong)",
                   lineHeight: 1
@@ -667,10 +689,10 @@ export function OverallProgressCard({
           )}
         />
         <div style={{ textAlign: "center" }}>
-          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 4, fontSize: 14 }}>
             {done} {t.ui.of} {total}
           </Title>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 11 }}>
             {t.ui.substepsCompleted}
           </Text>
         </div>
