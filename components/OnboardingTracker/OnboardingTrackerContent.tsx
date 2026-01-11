@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Row, Col, Alert, Button, Spin, message } from "antd";
 import { useRouter } from "next/navigation";
-import { getOnboardingDetail, updateField, addNote } from "@/lib/api";
-import { getToken } from "@/lib/session";
+import { getOnboardingDetail, updateField, addNote, deleteNote } from "@/lib/api";
+import { getToken, getUser } from "@/lib/session";
 import type { Onboarding, Mirror, Note } from "@/types";
 import {
   getEffectiveSteps,
@@ -51,6 +51,7 @@ export default function OnboardingTrackerContent({
       ? ((localStorage.getItem("language") as Language) || "es")
       : "es";
   const t = useTrackerTranslations(lang);
+  const currentUserId = getUser()?.UserId || "";
 
   // Fetch data
   const fetchDetail = async () => {
@@ -251,6 +252,17 @@ export default function OnboardingTrackerContent({
     await fetchDetail();
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      throw new Error("Missing token");
+    }
+
+    await deleteNote(token, clienteId, noteId);
+    await fetchDetail();
+  };
+
   const handleAddSubstepNote = async (body: string) => {
     if (!currentSubstep) return;
     const token = getToken();
@@ -364,17 +376,19 @@ export default function OnboardingTrackerContent({
               height: "100%",
             }}
           >
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} style={{ flexShrink: 0 }}>
               <Col xs={24} lg={12}>
-                <OverallProgressCard
-                  percent={overallProgress.percent}
-                  done={overallProgress.done}
-                  total={overallProgress.total}
-                  t={t}
-                />
+                <div style={{ width: "100%", aspectRatio: "1 / 1" }}>
+                  <OverallProgressCard
+                    percent={overallProgress.percent}
+                    done={overallProgress.done}
+                    total={overallProgress.total}
+                    t={t}
+                  />
+                </div>
               </Col>
               <Col xs={24} lg={12}>
-                <div style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "100%", aspectRatio: "1 / 1" }}>
                   <AgentCard
                     name="Laura Gómez"
                     role="Customer Success Manager"
@@ -391,7 +405,13 @@ export default function OnboardingTrackerContent({
               </Col>
             </Row>
             <div style={{ minHeight: 0, flex: 1 }}>
-              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
+              <NotesCard
+                notes={generalNotes}
+                currentUserId={currentUserId}
+                onCreate={handleAddGeneralNote}
+                onDelete={handleDeleteNote}
+                t={t}
+              />
             </div>
           </div>
         </Col>

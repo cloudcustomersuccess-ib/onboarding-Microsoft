@@ -27,6 +27,7 @@ import {
   MessageOutlined,
   CustomerServiceOutlined,
   CheckOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import type { TrackerTranslations } from "@/lib/i18n/trackerTranslations";
 
@@ -34,14 +35,14 @@ const { Text, Title } = Typography;
 
 const cardBaseStyle: React.CSSProperties = {
   borderRadius: 14,
-  border: "1px solid #eef0f3",
-  boxShadow: "0 10px 24px rgba(24, 39, 75, 0.06)",
-  background: "linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%)",
+  border: "1px solid var(--tracker-card-border)",
+  boxShadow: "var(--tracker-card-shadow)",
+  background: "var(--tracker-card-bg)",
 };
 
 const cardHeaderStyles = {
   header: {
-    borderBottom: "1px solid #f0f2f5",
+    borderBottom: "1px solid var(--tracker-card-border)",
     paddingTop: 14,
     paddingBottom: 12,
   },
@@ -184,7 +185,7 @@ export function CombinedTrackerCard({
         />
       </div>
 
-      <Divider style={{ margin: "8px 0" }} />
+      <Divider style={{ margin: "8px 0", borderColor: "var(--tracker-card-border)" }} />
 
       <div
         style={{
@@ -248,8 +249,8 @@ export function CombinedTrackerCard({
                 marginTop: 12,
                 padding: 12,
                 borderRadius: 12,
-                border: "1px solid #eef0f3",
-                background: "#ffffff",
+                border: "1px solid var(--tracker-card-border)",
+                background: "var(--tracker-card-bg)",
               }}
             >
               <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
@@ -281,28 +282,48 @@ export function CombinedTrackerCard({
             style={{
               marginTop: 8,
               paddingTop: 10,
-              borderTop: "1px solid #eef0f3",
-              background: "#fbfbfd",
-              borderRadius: 12,
+              borderTop: "1px solid var(--tracker-card-border)",
             }}
           >
-            <Flex align="center" justify="space-between" wrap="wrap" gap={8}>
-              <Space>
-                <Button type="text" icon={<MessageOutlined />} onClick={() => setNoteOpen(true)}>
-                  {t.ui.addNote}
-                </Button>
-                <Button type="text" icon={<CustomerServiceOutlined />} onClick={onSupport}>
-                  {t.ui.support}
-                </Button>
-                <Button
-                  type="text"
-                  icon={<CheckOutlined />}
-                  onClick={onMarkComplete}
-                  disabled={!canComplete}
-                  style={{ color: canComplete ? "#1677ff" : undefined }}
-                >
-                  {t.ui.markComplete}
-                </Button>
+            <Flex align="center" justify="flex-start" wrap="wrap" gap={8}>
+              <Space
+                split={
+                  <span
+                    style={{
+                      width: 1,
+                      height: 16,
+                      background: "var(--tracker-card-border)",
+                      display: "inline-block",
+                    }}
+                  />
+                }
+              >
+                <Tooltip title={t.ui.addNote}>
+                  <Button
+                    type="text"
+                    icon={<MessageOutlined />}
+                    aria-label={t.ui.addNote}
+                    onClick={() => setNoteOpen(true)}
+                  />
+                </Tooltip>
+                <Tooltip title={t.ui.support}>
+                  <Button
+                    type="text"
+                    icon={<CustomerServiceOutlined />}
+                    aria-label={t.ui.support}
+                    onClick={onSupport}
+                  />
+                </Tooltip>
+                <Tooltip title={t.ui.markComplete}>
+                  <Button
+                    type="text"
+                    icon={<CheckOutlined />}
+                    aria-label={t.ui.markComplete}
+                    onClick={onMarkComplete}
+                    disabled={!canComplete}
+                    style={{ color: canComplete ? "#1677ff" : undefined }}
+                  />
+                </Tooltip>
               </Space>
             </Flex>
           </div>
@@ -421,14 +442,17 @@ export interface NoteUI {
 
 interface NotesCardProps {
   notes: NoteUI[];
+  currentUserId: string;
   onCreate: (body: string) => Promise<void>;
+  onDelete: (noteId: string) => Promise<void>;
   t: TrackerTranslations;
 }
 
-export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
+export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: NotesCardProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const showEmptyState = notes.length === 0 && !open;
 
@@ -445,6 +469,17 @@ export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
       message.error(t.ui.noteError);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (noteId: string) => {
+    try {
+      setDeletingId(noteId);
+      await onDelete(noteId);
+    } catch (e) {
+      message.error(t.ui.noteError);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -487,7 +522,25 @@ export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
             <List
               dataSource={notes}
               renderItem={(n) => (
-                <List.Item>
+                <List.Item
+                  className="tracker-note-item"
+                  actions={
+                    n.id && n.author === currentUserId
+                      ? [
+                          <Button
+                            key="delete"
+                            type="text"
+                            danger
+                            className="tracker-note-delete"
+                            icon={<DeleteOutlined />}
+                            aria-label={t.ui.deleteNote}
+                            loading={deletingId === n.id}
+                            onClick={() => handleDelete(n.id)}
+                          />,
+                        ]
+                      : []
+                  }
+                >
                   <List.Item.Meta
                     title={
                       <Space size={8}>
@@ -512,7 +565,7 @@ export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
             style={{
               marginTop: notes.length > 0 ? 12 : 0,
               paddingTop: 12,
-              borderTop: "1px solid #eef0f3",
+              borderTop: "1px solid var(--tracker-card-border)",
             }}
           >
             <Input.TextArea
@@ -571,21 +624,23 @@ export function OverallProgressCard({
         <Progress
           type="dashboard"
           percent={percent}
-          size={120}
+          size={100}
           strokeColor={{
-            "0%": "#005657",
-            "100%": "#003031",
+            "0%": "var(--tracker-accent)",
+            "100%": "var(--tracker-accent-strong)",
           }}
           format={(percent) => (
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: "bold", color: "#003031" }}>
+              <div
+                style={{ fontSize: 22, fontWeight: "bold", color: "var(--tracker-accent-strong)" }}
+              >
                 {percent}%
               </div>
             </div>
           )}
         />
         <div style={{ textAlign: "center" }}>
-          <Title level={4} style={{ margin: 0, color: "#003031" }}>
+          <Title level={4} style={{ margin: 0, color: "var(--tracker-accent-strong)" }}>
             {done} {t.ui.of} {total}
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>

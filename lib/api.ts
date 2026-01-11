@@ -228,3 +228,18 @@ export async function addNote(
     payload
   );
 }
+
+/**
+ * Onboardings: Delete Note
+ */
+export async function deleteNote(
+  token: string,
+  clienteId: string,
+  noteId: string
+): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>(
+    `/onboardings/${encodeURIComponent(clienteId)}/notes/${encodeURIComponent(noteId)}`,
+    "DELETE",
+    token
+  );
+}

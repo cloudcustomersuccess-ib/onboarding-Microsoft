@@ -118,6 +118,7 @@ export interface TrackerTranslations {
     contactAgent: string;
     noteSaved: string;
     noteError: string;
+    deleteNote: string;
     fieldUpdated: string;
     fieldUpdateError: string;
     loadingError: string;
@@ -231,6 +232,7 @@ export const translations: Record<Language, TrackerTranslations> = {
       contactAgent: "Contactar",
       noteSaved: "Nota guardada",
       noteError: "No se pudo guardar la nota",
+      deleteNote: "Eliminar nota",
       fieldUpdated: "Campo actualizado",
       fieldUpdateError: "No se pudo actualizar el campo",
       loadingError: "Error al cargar los datos",
@@ -341,6 +343,7 @@ export const translations: Record<Language, TrackerTranslations> = {
       contactAgent: "Contact",
       noteSaved: "Note saved",
       noteError: "Could not save note",
+      deleteNote: "Delete note",
       fieldUpdated: "Field updated",
       fieldUpdateError: "Could not update field",
       loadingError: "Error loading data",
@@ -453,6 +456,7 @@ export const translations: Record<Language, TrackerTranslations> = {
       contactAgent: "Contatar",
       noteSaved: "Nota salva",
       noteError: "Não foi possível salvar a nota",
+      deleteNote: "Excluir nota",
       fieldUpdated: "Campo atualizado",
       fieldUpdateError: "Não foi possível atualizar o campo",
       loadingError: "Erro ao carregar dados",
