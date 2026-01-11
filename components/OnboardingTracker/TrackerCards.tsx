@@ -12,7 +12,6 @@ import {
   Flex,
   Tag,
   Tooltip,
-  Modal,
   Input,
   List,
   Divider,
@@ -81,7 +80,8 @@ interface CombinedTrackerCardProps {
   title: string;
   description: React.ReactNode;
   loading: boolean;
-  onAddNote: () => void;
+  noteContextKey: string;
+  onSaveNote: (body: string) => Promise<void>;
   onMarkComplete: () => void;
   onSupport: () => void;
   canComplete: boolean;
@@ -98,12 +98,38 @@ export function CombinedTrackerCard({
   title,
   description,
   loading,
-  onAddNote,
+  noteContextKey,
+  onSaveNote,
   onMarkComplete,
   onSupport,
   canComplete,
   t,
 }: CombinedTrackerCardProps) {
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteValue, setNoteValue] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+
+  useEffect(() => {
+    setNoteOpen(false);
+    setNoteValue("");
+  }, [noteContextKey]);
+
+  const handleSaveNote = async () => {
+    const body = noteValue.trim();
+    if (!body) return;
+    try {
+      setNoteSaving(true);
+      await onSaveNote(body);
+      setNoteValue("");
+      setNoteOpen(false);
+      message.success(t.ui.noteSaved);
+    } catch (e) {
+      message.error(t.ui.noteError);
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
   return (
     <Card
       title={t.ui.generalSteps}
@@ -216,6 +242,41 @@ export function CombinedTrackerCard({
             )}
           </div>
 
+          {noteOpen && (
+            <div
+              style={{
+                marginTop: 12,
+                padding: 12,
+                borderRadius: 12,
+                border: "1px solid #eef0f3",
+                background: "#ffffff",
+              }}
+            >
+              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                {t.ui.writeNote}
+              </Text>
+              <Input.TextArea
+                value={noteValue}
+                onChange={(e) => setNoteValue(e.target.value)}
+                placeholder={t.ui.writeNote}
+                autoSize={{ minRows: 3, maxRows: 8 }}
+              />
+              <Flex justify="flex-end" gap={8} style={{ marginTop: 8 }}>
+                <Button
+                  onClick={() => {
+                    setNoteOpen(false);
+                    setNoteValue("");
+                  }}
+                >
+                  {t.ui.cancel}
+                </Button>
+                <Button type="primary" onClick={handleSaveNote} loading={noteSaving}>
+                  {t.ui.save}
+                </Button>
+              </Flex>
+            </div>
+          )}
+
           <div
             style={{
               marginTop: 8,
@@ -227,7 +288,7 @@ export function CombinedTrackerCard({
           >
             <Flex align="center" justify="space-between" wrap="wrap" gap={8}>
               <Space>
-                <Button type="text" icon={<MessageOutlined />} onClick={onAddNote}>
+                <Button type="text" icon={<MessageOutlined />} onClick={() => setNoteOpen(true)}>
                   {t.ui.addNote}
                 </Button>
                 <Button type="text" icon={<CustomerServiceOutlined />} onClick={onSupport}>
@@ -369,6 +430,8 @@ export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const showEmptyState = notes.length === 0 && !open;
+
   const handleCreate = async () => {
     const body = value.trim();
     if (!body) return;
@@ -394,44 +457,86 @@ export function NotesCard({ notes, onCreate, t }: NotesCardProps) {
         </Button>
       }
       style={{ height: "100%", overflow: "hidden", ...cardBaseStyle }}
-      styles={{ ...cardHeaderStyles, body: { height: "100%", overflow: "auto" } }}
+      styles={{ ...cardHeaderStyles, body: { height: "100%", overflow: "hidden" } }}
     >
-      <List
-        dataSource={notes}
-        locale={{ emptyText: t.ui.noNotesYet }}
-        renderItem={(n) => (
-          <List.Item>
-            <List.Item.Meta
-              title={
-                <Space size={8}>
-                  <Text strong>{n.author}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {n.date}
-                  </Text>
-                </Space>
-              }
-              description={<Text>{n.body}</Text>}
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <div style={{ flex: 1, overflow: "auto", paddingRight: 4 }}>
+          {showEmptyState ? (
+            <div
+              style={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                textAlign: "center",
+                padding: "12px 0",
+              }}
+            >
+              <img
+                src="/images/ChatGPT%20Image%20Jan%2011%2C%202026%2C%2002_45_23%20PM.png"
+                alt="Empty notes"
+                style={{ maxWidth: "80%", height: "auto", borderRadius: 12 }}
+              />
+              <Button type="primary" onClick={() => setOpen(true)}>
+                Añadir nota
+              </Button>
+            </div>
+          ) : notes.length > 0 ? (
+            <List
+              dataSource={notes}
+              renderItem={(n) => (
+                <List.Item>
+                  <List.Item.Meta
+                    title={
+                      <Space size={8}>
+                        <Text strong>{n.author}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {n.date}
+                        </Text>
+                      </Space>
+                    }
+                    description={<Text>{n.body}</Text>}
+                  />
+                </List.Item>
+              )}
             />
-          </List.Item>
-        )}
-      />
+          ) : (
+            <div />
+          )}
+        </div>
 
-      <Modal
-        title={t.ui.newNote}
-        open={open}
-        okText={t.ui.save}
-        cancelText={t.ui.cancel}
-        confirmLoading={saving}
-        onOk={handleCreate}
-        onCancel={() => setOpen(false)}
-      >
-        <Input.TextArea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={t.ui.writeNote}
-          autoSize={{ minRows: 4, maxRows: 10 }}
-        />
-      </Modal>
+        {open && (
+          <div
+            style={{
+              marginTop: notes.length > 0 ? 12 : 0,
+              paddingTop: 12,
+              borderTop: "1px solid #eef0f3",
+            }}
+          >
+            <Input.TextArea
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={t.ui.writeNote}
+              autoSize={{ minRows: 3, maxRows: 8 }}
+            />
+            <Flex justify="flex-end" gap={8} style={{ marginTop: 8 }}>
+              <Button
+                onClick={() => {
+                  setOpen(false);
+                  setValue("");
+                }}
+              >
+                {t.ui.cancel}
+              </Button>
+              <Button type="primary" onClick={handleCreate} loading={saving}>
+                {t.ui.save}
+              </Button>
+            </Flex>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Row, Col, Alert, Button, Spin, Modal, Input, message } from "antd";
+import { Row, Col, Alert, Button, Spin, message } from "antd";
 import { useRouter } from "next/navigation";
 import { getOnboardingDetail, updateField, addNote } from "@/lib/api";
 import { getToken } from "@/lib/session";
@@ -17,12 +17,10 @@ import { useTrackerTranslations, getTranslation } from "@/lib/i18n/trackerTransl
 import type { Language } from "@/lib/i18n/trackerTranslations";
 import {
   CombinedTrackerCard,
-  TimelineCard,
   NotesCard,
   OverallProgressCard,
   type MainStepUI,
   type SubstepUI,
-  type TimelineItemUI,
   type NoteUI,
 } from "./TrackerCards";
 import { AgentCard } from "@/components/AgentCard/AgentCard";
@@ -46,10 +44,6 @@ export default function OnboardingTrackerContent({
   // Step/substep navigation
   const [currentMainStepIndex, setCurrentMainStepIndex] = useState(0);
   const [currentSubstepIndex, setCurrentSubstepIndex] = useState(0);
-
-  // Modal for adding substep note
-  const [noteModalOpen, setNoteModalOpen] = useState(false);
-  const [noteModalValue, setNoteModalValue] = useState("");
 
   // i18n
   const lang: Language =
@@ -189,42 +183,6 @@ export default function OnboardingTrackerContent({
     );
   }, [currentSubstep, mirror]);
 
-  // Timeline items
-  const timelineItems: TimelineItemUI[] = useMemo(() => {
-    if (!mirror) return [];
-
-    let currentFound = false;
-
-    return allSubsteps.map((sub) => {
-      const done = isFieldCompleted(sub.fieldKey, mirror[sub.fieldKey], sub.type);
-
-      let state: "done" | "current" | "future" = "future";
-      if (done) {
-        state = "done";
-      } else if (!currentFound) {
-        state = "current";
-        currentFound = true;
-      }
-
-      // Get completed date
-      let completedAt: string | undefined;
-      if (done) {
-        const completedAtField = `${sub.fieldKey}__CompletedAt`;
-        const updatedAtField = `${sub.fieldKey}__UpdatedAt`;
-        completedAt = mirror[completedAtField] || mirror[updatedAtField];
-      }
-
-      return {
-        key: sub.fieldKey,
-        title: getTranslation(lang, sub.labelKey),
-        state,
-        completedAt,
-      };
-    });
-  }, [allSubsteps, mirror, lang]);
-
-  const currentTimelineKey = timelineItems.find((it) => it.state === "current")?.key || "";
-
   // Overall progress
   const overallProgress = useMemo(() => {
     const total = allSubsteps.length;
@@ -281,7 +239,7 @@ export default function OnboardingTrackerContent({
     const token = getToken();
     if (!token) {
       router.push("/login");
-      return;
+      throw new Error("Missing token");
     }
 
     await addNote(token, clienteId, {
@@ -293,32 +251,22 @@ export default function OnboardingTrackerContent({
     await fetchDetail();
   };
 
-  const handleAddSubstepNote = async () => {
+  const handleAddSubstepNote = async (body: string) => {
     if (!currentSubstep) return;
-    const body = noteModalValue.trim();
-    if (!body) return;
-
-    try {
-      const token = getToken();
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      await addNote(token, clienteId, {
-        scopeType: "SUBSTEP",
-        substepKey: currentSubstep.fieldKey,
-        visibility: "PUBLIC",
-        body,
-      });
-
-      message.success(t.ui.noteSaved);
-      setNoteModalValue("");
-      setNoteModalOpen(false);
-      await fetchDetail();
-    } catch (err) {
-      message.error(t.ui.noteError);
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      throw new Error("Missing token");
     }
+
+    await addNote(token, clienteId, {
+      scopeType: "SUBSTEP",
+      substepKey: currentSubstep.fieldKey,
+      visibility: "PUBLIC",
+      body,
+    });
+
+    await fetchDetail();
   };
 
   const handleSupport = () => {
@@ -372,10 +320,10 @@ export default function OnboardingTrackerContent({
       <Row gutter={[16, 16]} style={{ height: "100%" }}>
         {/* Left Column: Combined tracker card + Progress/Agent */}
         <Col xs={24} xl={16} style={{ height: "100%", overflow: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {/* Combined tracker card */}
             {currentSubstep && (
-              <div style={{ minHeight: 0 }}>
+              <div style={{ minHeight: 0, flex: 1 }}>
                 <CombinedTrackerCard
                   currentStepIndex={currentMainStepIndex}
                   stepsUI={mainStepsUI}
@@ -394,7 +342,8 @@ export default function OnboardingTrackerContent({
                   title={getTranslation(lang, currentSubstep.labelKey)}
                   description={getTranslation(lang, currentSubstep.instructionsKey)}
                   loading={!!updatingField}
-                  onAddNote={() => setNoteModalOpen(true)}
+                  noteContextKey={currentSubstep.fieldKey}
+                  onSaveNote={handleAddSubstepNote}
                   onMarkComplete={handleMarkComplete}
                   onSupport={handleSupport}
                   canComplete={!currentSubstepCompleted}
@@ -402,19 +351,19 @@ export default function OnboardingTrackerContent({
                 />
               </div>
             )}
-
           </div>
         </Col>
 
-        {/* Right Column: Timeline + Notes */}
+        {/* Right Column: Progress/Agent + Notes */}
         <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ height: 360 }}>
-              <TimelineCard items={timelineItems} currentKey={currentTimelineKey} t={t} />
-            </div>
-            <div style={{ height: 360 }}>
-              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
-            </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              height: "100%",
+            }}
+          >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
                 <OverallProgressCard
@@ -441,26 +390,12 @@ export default function OnboardingTrackerContent({
                 </div>
               </Col>
             </Row>
+            <div style={{ minHeight: 0, flex: 1 }}>
+              <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
+            </div>
           </div>
         </Col>
       </Row>
-
-      {/* Modal for adding substep note */}
-      <Modal
-        title={t.ui.newNote}
-        open={noteModalOpen}
-        okText={t.ui.save}
-        cancelText={t.ui.cancel}
-        onOk={handleAddSubstepNote}
-        onCancel={() => setNoteModalOpen(false)}
-      >
-        <Input.TextArea
-          value={noteModalValue}
-          onChange={(e) => setNoteModalValue(e.target.value)}
-          placeholder={t.ui.writeNote}
-          autoSize={{ minRows: 4, maxRows: 10 }}
-        />
-      </Modal>
     </div>
   );
 }
