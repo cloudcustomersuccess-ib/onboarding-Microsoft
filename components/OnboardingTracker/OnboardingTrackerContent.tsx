@@ -381,8 +381,8 @@ export default function OnboardingTrackerContent({
   return (
     <div style={{ height: "calc(100vh - 168px)", overflow: "hidden" }}>
       <Row gutter={[16, 16]} style={{ height: "100%" }}>
-        {/* Left Column: General Steps */}
-        <Col xs={24} lg={6} style={{ height: "100%", overflow: "auto" }}>
+        {/* Left Column: General Steps (Stepper vertical) */}
+        <Col xs={24} xl={4} style={{ height: "100%", overflow: "auto" }}>
           <MainStepsCard
             currentStepIndex={currentMainStepIndex}
             stepsUI={mainStepsUI}
@@ -395,9 +395,10 @@ export default function OnboardingTrackerContent({
           />
         </Col>
 
-        {/* Center Column: Substeps + Instructions */}
-        <Col xs={24} lg={12} style={{ height: "100%", overflow: "auto" }}>
+        {/* Center Column: Substeps Stepper (top) + Instructions Card (bottom) */}
+        <Col xs={24} xl={12} style={{ height: "100%", overflow: "auto" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
+            {/* Substeps Stepper - Horizontal at top */}
             <SubstepsStepper
               currentSubIndex={currentSubstepIndex}
               orientation={substepsOrientation}
@@ -410,53 +411,64 @@ export default function OnboardingTrackerContent({
               t={t}
             />
 
+            {/* Instruction Card - Takes remaining space */}
             {currentSubstep && (
-              <SubstepInstructionCard
-                title={getTranslation(lang, currentSubstep.labelKey)}
-                description={getTranslation(lang, currentSubstep.instructionsKey)}
-                loading={!!updatingField}
-                onAddNote={() => setNoteModalOpen(true)}
-                onMarkComplete={handleMarkComplete}
-                onSupport={handleSupport}
-                canComplete={!currentSubstepCompleted}
-                t={t}
-              />
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <SubstepInstructionCard
+                  title={getTranslation(lang, currentSubstep.labelKey)}
+                  description={getTranslation(lang, currentSubstep.instructionsKey)}
+                  loading={!!updatingField}
+                  onAddNote={() => setNoteModalOpen(true)}
+                  onMarkComplete={handleMarkComplete}
+                  onSupport={handleSupport}
+                  canComplete={!currentSubstepCompleted}
+                  t={t}
+                />
+              </div>
             )}
           </div>
         </Col>
 
-        {/* Right Column: Progress, Timeline, Notes, Agent */}
-        <Col xs={24} lg={6} style={{ height: "100%", overflow: "auto" }}>
+        {/* Right Column: Timeline + Notes + Progress + Agent stacked vertically */}
+        <Col xs={24} xl={8} style={{ height: "100%", overflow: "auto" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <OverallProgressCard
-              percent={overallProgress.percent}
-              done={overallProgress.done}
-              total={overallProgress.total}
-              t={t}
-            />
-
-            <div style={{ height: "300px" }}>
+            {/* Timeline at top */}
+            <div style={{ height: "350px" }}>
               <TimelineCard items={timelineItems} currentKey={currentTimelineKey} t={t} />
             </div>
 
-            <div style={{ height: "300px" }}>
+            {/* Notes below timeline */}
+            <div style={{ height: "280px" }}>
               <NotesCard notes={generalNotes} onCreate={handleAddGeneralNote} t={t} />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <AgentCard
-                name="Laura Gómez"
-                role="Customer Success Manager"
-                about={
-                  lang === "es"
-                    ? "Tu punto de contacto para completar el alta y resolver bloqueos."
-                    : lang === "en"
-                    ? "Your contact point to complete onboarding and resolve issues."
-                    : "Seu ponto de contato para concluir a integração e resolver problemas."
-                }
-                email="customersuccess.es@tdsynnex.com"
-              />
-            </div>
+            {/* Progress and Agent side by side at bottom */}
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <OverallProgressCard
+                  percent={overallProgress.percent}
+                  done={overallProgress.done}
+                  total={overallProgress.total}
+                  t={t}
+                />
+              </Col>
+              <Col xs={24} lg={12}>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <AgentCard
+                    name="Laura Gómez"
+                    role="Customer Success Manager"
+                    about={
+                      lang === "es"
+                        ? "Tu punto de contacto para completar el alta y resolver bloqueos."
+                        : lang === "en"
+                        ? "Your contact point to complete onboarding and resolve issues."
+                        : "Seu ponto de contato para concluir a integração e resolver problemas."
+                    }
+                    email="customersuccess.es@tdsynnex.com"
+                  />
+                </div>
+              </Col>
+            </Row>
           </div>
         </Col>
       </Row>

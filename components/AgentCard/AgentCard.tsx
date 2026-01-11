@@ -21,7 +21,7 @@ export function AgentCard({
   avatarUrl = "https://api.dicebear.com/7.x/thumbs/svg?seed=tdsynnex",
 }: AgentCardProps) {
   return (
-    <div className={styles.card} style={{ ["--accent" as any]: "#003031" }}>
+    <div className={styles.card}>
       <button
         className={styles.mail}
         aria-label="Enviar email"

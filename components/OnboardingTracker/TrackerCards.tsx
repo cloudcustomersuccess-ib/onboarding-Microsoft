@@ -31,7 +31,7 @@ import {
 } from "@ant-design/icons";
 import type { TrackerTranslations } from "@/lib/i18n/trackerTranslations";
 
-const { Text, Title } = Typography;
+const { Text, Title, Paragraph } = Typography;
 
 // ============================================================
 // 1) MAIN STEPS CARD
@@ -61,27 +61,37 @@ export function MainStepsCard({
   return (
     <Card
       title={t.ui.generalSteps}
-      styles={{ body: { paddingTop: 8 } }}
+      styles={{ body: { paddingTop: 16 } }}
       style={{ height: "100%", overflow: "hidden" }}
     >
       <Steps
         current={currentStepIndex}
         direction="vertical"
+        titlePlacement="vertical"
         onChange={(idx) => {
           const step = stepsUI[idx];
           if (step?.locked) return;
           onSelectStep(idx);
         }}
         items={stepsUI.map((s) => ({
-          title: s.title,
+          title: (
+            <div style={{ marginTop: 8 }}>
+              <Text strong style={{ fontSize: 14 }}>
+                {s.title}
+              </Text>
+            </div>
+          ),
           description: (
-            <Text
-              type={
-                s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined
-              }
-            >
-              {s.statusText}
-            </Text>
+            <div style={{ marginTop: 4 }}>
+              <Text
+                type={
+                  s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined
+                }
+                style={{ fontSize: 12 }}
+              >
+                {s.statusText}
+              </Text>
+            </div>
           ),
           percent: s.percent,
           disabled: !!s.locked,
@@ -123,7 +133,11 @@ export function SubstepsStepper({
   t,
 }: SubstepsStepperProps) {
   return (
-    <Card title={t.ui.substeps} style={{ overflow: "hidden" }}>
+    <Card
+      title={t.ui.substeps}
+      style={{ overflow: "hidden" }}
+      styles={{ body: { paddingTop: 16 } }}
+    >
       <Steps
         current={currentSubIndex}
         onChange={(idx) => {
@@ -131,10 +145,10 @@ export function SubstepsStepper({
           onChange(idx);
         }}
         direction={orientation}
-        items={substeps.map((s) => ({
+        items={substeps.map((s, idx) => ({
           title: s.title,
           disabled: s.disabled,
-          status: s.done ? "finish" : undefined,
+          status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
           icon: s.done ? <CheckCircleFilled /> : undefined,
         }))}
       />
@@ -170,15 +184,37 @@ export function SubstepInstructionCard({
   return (
     <Card
       title={title}
-      extra={<Tag icon={<FileTextOutlined />}>{t.ui.instructions}</Tag>}
-      style={{ height: "100%", display: "flex", flexDirection: "column" }}
+      extra={<Tag icon={<FileTextOutlined />} color="blue">{t.ui.instructions}</Tag>}
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        borderRadius: 8,
+      }}
       styles={{
-        body: { flex: 1, overflow: "auto" },
+        body: {
+          flex: 1,
+          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
+        },
+        header: {
+          borderBottom: "1px solid #f0f0f0",
+        },
       }}
     >
-      {loading ? <Skeleton active /> : <div>{description}</div>}
+      <div style={{ flex: 1, overflow: "auto", marginBottom: 16 }}>
+        {loading ? (
+          <Skeleton active />
+        ) : (
+          <Typography.Paragraph style={{ fontSize: 14, lineHeight: 1.6 }}>
+            {description}
+          </Typography.Paragraph>
+        )}
+      </div>
 
-      <Divider />
+      <Divider style={{ margin: "12px 0" }} />
 
       <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
         <Space wrap>
@@ -192,6 +228,7 @@ export function SubstepInstructionCard({
 
         <Button
           type="primary"
+          size="large"
           icon={<CheckOutlined />}
           onClick={onMarkComplete}
           disabled={!canComplete}
@@ -229,48 +266,62 @@ export function TimelineCard({ items, currentKey, t }: TimelineCardProps) {
     const parent = containerRef.current;
     const child = currentRef.current;
     setTimeout(() => {
-      parent.scrollTop = Math.max(0, child.offsetTop - 24);
-    }, 100);
+      parent.scrollTop = Math.max(0, child.offsetTop - 100);
+    }, 200);
   }, [currentKey]);
 
   return (
     <Card
       title={t.ui.timeline}
-      style={{ height: "100%", overflow: "hidden" }}
-      styles={{ body: { height: "100%", overflow: "auto" } }}
+      style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}
+      styles={{
+        body: { flex: 1, overflow: "auto", paddingTop: 16 },
+      }}
     >
-      <div ref={containerRef} style={{ height: "100%", overflow: "auto" }}>
+      <div ref={containerRef} style={{ height: "100%", overflow: "auto", paddingRight: 8 }}>
         <Timeline
           items={items.map((it) => {
             const isCurrent = it.key === currentKey;
-            const dot =
-              it.state === "done" ? (
-                <CheckCircleFilled />
-              ) : it.state === "current" ? (
-                <Spin size="small" />
-              ) : (
-                <ClockCircleOutlined />
-              );
+
+            let dot: React.ReactNode;
+            let color: string | undefined;
+
+            if (it.state === "done") {
+              dot = <CheckCircleFilled style={{ fontSize: 16 }} />;
+              color = "green";
+            } else if (it.state === "current") {
+              dot = <Spin size="small" />;
+              color = "blue";
+            } else {
+              dot = <ClockCircleOutlined style={{ fontSize: 14, opacity: 0.5 }} />;
+              color = undefined;
+            }
 
             const content = (
               <div ref={isCurrent ? currentRef : undefined}>
                 <Text
+                  strong={it.state === "current"}
                   style={{
                     opacity: it.state === "future" ? 0.45 : 1,
                     display: "block",
+                    fontSize: it.state === "current" ? 14 : 13,
                   }}
                 >
                   {it.title}
                 </Text>
                 {it.state === "done" && it.completedAt ? (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
                     {t.ui.completedOn} {it.completedAt}
+                  </Text>
+                ) : it.state === "current" ? (
+                  <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
+                    {t.status.pending}
                   </Text>
                 ) : null}
               </div>
             );
 
-            return { dot, color: it.state === "done" ? "green" : undefined, children: content };
+            return { dot, color, children: content };
           })}
         />
       </div>
@@ -385,14 +436,37 @@ export function OverallProgressCard({
   t,
 }: OverallProgressCardProps) {
   return (
-    <Card title={t.ui.overallProgress}>
-      <Flex align="center" justify="space-between" gap={16} wrap="wrap">
-        <Progress type="dashboard" percent={percent} size={100} />
-        <div>
-          <Title level={5} style={{ margin: 0 }}>
+    <Card
+      title={t.ui.overallProgress}
+      style={{ height: "100%" }}
+      styles={{
+        body: { display: "flex", alignItems: "center", justifyContent: "center" },
+      }}
+    >
+      <Flex vertical align="center" justify="center" gap={16}>
+        <Progress
+          type="dashboard"
+          percent={percent}
+          size={120}
+          strokeColor={{
+            "0%": "#005657",
+            "100%": "#003031",
+          }}
+          format={(percent) => (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: "bold", color: "#003031" }}>
+                {percent}%
+              </div>
+            </div>
+          )}
+        />
+        <div style={{ textAlign: "center" }}>
+          <Title level={4} style={{ margin: 0, color: "#003031" }}>
             {done} {t.ui.of} {total}
           </Title>
-          <Text type="secondary">{t.ui.substepsCompleted}</Text>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            {t.ui.substepsCompleted}
+          </Text>
         </div>
       </Flex>
     </Card>
