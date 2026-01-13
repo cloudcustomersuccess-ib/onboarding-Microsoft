@@ -1,23 +1,89 @@
 /**
  * DB HELPERS: leer/escribir en Google Sheets como si fuera una BBDD.
+ *
+ * ✅ ROBUSTO: Validaciones claras y logs útiles para debugging.
  */
 
-function db() {
-  if (!CONFIG.SPREADSHEET_ID) throw new Error("CONFIG.SPREADSHEET_ID está vacío.");
-  return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+/**
+ * ✅ Helper principal: abre el Spreadsheet
+ * Valida que CONFIG.SPREADSHEET_ID existe y no está vacío.
+ * Lanza error claro si falta o está mal configurado.
+ *
+ * @returns {Spreadsheet} El spreadsheet abierto
+ * @throws {Error} Si CONFIG.SPREADSHEET_ID no está configurado o es inválido
+ */
+function getSpreadsheet_() {
+  const id = CONFIG.SPREADSHEET_ID;
+
+  // Validación estricta
+  if (!id || String(id).trim() === "") {
+    throw new Error(
+      "CONFIG.SPREADSHEET_ID está vacío o no configurado. " +
+      "Verifica config.gs y asegúrate de que CONFIG.SPREADSHEET_ID tiene un valor válido."
+    );
+  }
+
+  // Log útil (solo si está definido, no loguear secrets)
+  Logger.log("Opening spreadsheet with ID: %s", id);
+
+  try {
+    return SpreadsheetApp.openById(id);
+  } catch (err) {
+    throw new Error(
+      `Error al abrir spreadsheet con ID "${id}": ${err.message || err}. ` +
+      "Verifica que el ID es correcto y que el script tiene permisos de acceso."
+    );
+  }
 }
 
+/**
+ * ✅ Helper: obtiene una sheet por nombre
+ * Valida que el nombre existe y no está vacío.
+ * Usa getSpreadsheet_() internamente para garantizar validaciones.
+ *
+ * @param {string} name - Nombre de la pestaña/sheet
+ * @returns {Sheet} La sheet encontrada
+ * @throws {Error} Si name está vacío o la sheet no existe
+ */
 function getSheet_(name) {
-  const ss = db();
+  // Validación del parámetro
+  if (!name || String(name).trim() === "") {
+    throw new Error("getSheet_(): el parámetro 'name' está vacío o no fue provisto.");
+  }
+
+  const ss = getSpreadsheet_(); // Usa helper robusto
   const sh = ss.getSheetByName(name);
-  if (!sh) throw new Error(`No existe la pestaña: ${name}`);
+
+  if (!sh) {
+    throw new Error(
+      `La pestaña "${name}" no existe en el spreadsheet. ` +
+      `Verifica que la pestaña existe y que el nombre en CONFIG.SHEETS.* coincide exactamente.`
+    );
+  }
+
   return sh;
 }
 
+/**
+ * ✅ Alternativa legacy (DEPRECADA): usar getSpreadsheet_() en su lugar
+ * Mantenida solo para compatibilidad con código existente.
+ * Se recomienda usar getSpreadsheet_() directamente.
+ */
+function db() {
+  return getSpreadsheet_();
+}
+
+/**
+ * Obtiene un mapa de headers: { "NombreColumna": columnIndex }
+ * @param {Sheet} sheet - La sheet de la que leer headers
+ * @returns {Object} Mapa de nombre de columna -> índice (1-indexed)
+ */
 function getHeaderMap_(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const map = {};
-  headers.forEach((h, i) => { map[String(h).trim()] = i + 1; });
+  headers.forEach((h, i) => {
+    map[String(h).trim()] = i + 1;
+  });
   return map;
 }
 
@@ -39,15 +105,23 @@ function findRowByClienteId_(sheetName, clienteId) {
   return idx === -1 ? -1 : (idx + 2);
 }
 
+/**
+ * Lee una fila completa como objeto { header: value }
+ */
 function readRowAsObject_(sheetName, rowNumber) {
   const sh = getSheet_(sheetName);
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   const row = sh.getRange(rowNumber, 1, 1, sh.getLastColumn()).getValues()[0];
   const obj = {};
-  headers.forEach((h, i) => { obj[String(h).trim()] = row[i]; });
+  headers.forEach((h, i) => {
+    obj[String(h).trim()] = row[i];
+  });
   return obj;
 }
 
+/**
+ * Escribe un valor en un campo específico de una fila
+ */
 function writeField_(sheetName, rowNumber, fieldKey, value) {
   const sh = getSheet_(sheetName);
   const hm = getHeaderMap_(sh);
@@ -56,6 +130,9 @@ function writeField_(sheetName, rowNumber, fieldKey, value) {
   sh.getRange(rowNumber, col).setValue(value);
 }
 
+/**
+ * Helper para timestamp actual formateado
+ */
 function now_() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
 }

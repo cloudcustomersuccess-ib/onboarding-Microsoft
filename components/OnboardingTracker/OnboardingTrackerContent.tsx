@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Row, Col, Alert, Button, Spin, message, Tag } from "antd";
+import { Row, Col, Alert, Button, Spin, message } from "antd";
 import { useRouter } from "next/navigation";
 import { getOnboardingDetail, updateField, addNote, deleteNote } from "@/lib/api";
 import { getToken, getUser } from "@/lib/session";
@@ -10,10 +10,11 @@ import {
   getEffectiveSteps,
   getAllSubsteps,
   isFieldCompleted,
+  isSubstepCompleted,
   type MainStepDefinition,
   type SubstepDefinition,
 } from "@/lib/onboardingSteps";
-import { normalizeManufacturer, getManufacturerDisplayName, isValidManufacturer, type ManufacturerKey } from "@/lib/manufacturer";
+import { normalizeManufacturer, isValidManufacturer, type ManufacturerKey } from "@/lib/manufacturer";
 import { useTrackerTranslations, getTranslation } from "@/lib/i18n/trackerTranslations";
 import type { Language } from "@/lib/i18n/trackerTranslations";
 import {
@@ -55,7 +56,7 @@ export default function OnboardingTrackerContent({
   const currentUserId = getUser()?.UserId || "";
 
   // Fetch data
-  const fetchDetail = async () => {
+  const fetchDetail = React.useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -75,11 +76,11 @@ export default function OnboardingTrackerContent({
     } finally {
       setLoading(false);
     }
-  };
+  }, [clienteId, router, t.ui.loadingError]);
 
   useEffect(() => {
     fetchDetail();
-  }, [clienteId]);
+  }, [fetchDetail]);
 
   // Get effective steps based on manufacturer
   const effectiveSteps: MainStepDefinition[] = useMemo(() => {
@@ -91,23 +92,23 @@ export default function OnboardingTrackerContent({
   }, [onboarding]);
 
   // Calculate step completion
-  const getStepCompletion = (step: MainStepDefinition): number => {
+  const getStepCompletion = React.useCallback((step: MainStepDefinition): number => {
     if (!mirror) return 0;
     const totalSubs = step.substeps.length;
     if (totalSubs === 0) return 100;
 
     const completedSubs = step.substeps.filter((sub) =>
-      isFieldCompleted(sub.fieldKey, mirror[sub.fieldKey], sub.type)
+      isSubstepCompleted(sub, mirror)
     ).length;
 
     return Math.round((completedSubs / totalSubs) * 100);
-  };
+  }, [mirror]);
 
-  const getStepStatus = (percent: number): string => {
+  const getStepStatus = React.useCallback((percent: number): string => {
     if (percent === 0) return t.status.notStarted;
     if (percent === 100) return t.status.completed;
     return t.status.pending;
-  };
+  }, [t.status]);
 
   // Check if Step 3 is locked
   const isStep3Locked = useMemo(() => {
@@ -115,7 +116,7 @@ export default function OnboardingTrackerContent({
     const step1Percent = getStepCompletion(effectiveSteps[0]);
     const step2Percent = getStepCompletion(effectiveSteps[1]);
     return step1Percent < 100 || step2Percent < 100;
-  }, [effectiveSteps, mirror]);
+  }, [effectiveSteps, getStepCompletion]);
 
   // Get manufacturer key for dynamic Step 2 title
   const manufacturerKey: ManufacturerKey = useMemo(() => {
@@ -132,8 +133,14 @@ export default function OnboardingTrackerContent({
       // Use manufacturer-specific title for Step 2
       let title = getTranslation(lang, step.labelKey);
       if (idx === 1 && step.key.startsWith("step2_")) {
-        const manufacturerTitleKey = manufacturerKey.toLowerCase() as "microsoft" | "aws" | "google";
-        title = t.steps.step2[manufacturerTitleKey] || title;
+        const manufacturerTitleKey = manufacturerKey.toLowerCase();
+        if (manufacturerTitleKey === "microsoft") {
+          title = t.steps.step2.microsoft;
+        } else if (manufacturerTitleKey === "aws") {
+          title = t.steps.step2.aws;
+        } else if (manufacturerTitleKey === "google") {
+          title = t.steps.step2.google;
+        }
       }
 
       return {
@@ -144,7 +151,7 @@ export default function OnboardingTrackerContent({
         locked,
       };
     });
-  }, [effectiveSteps, mirror, isStep3Locked, lang, t, manufacturerKey]);
+  }, [effectiveSteps, isStep3Locked, lang, t, manufacturerKey, getStepCompletion, getStepStatus]);
 
   // Get current main step
   const currentMainStep = effectiveSteps[currentMainStepIndex];
@@ -154,25 +161,32 @@ export default function OnboardingTrackerContent({
     if (!currentMainStep || !mirror) return [];
 
     return currentMainStep.substeps.map((sub, idx) => {
-      const done = isFieldCompleted(sub.fieldKey, mirror[sub.fieldKey], sub.type);
+      const done = isSubstepCompleted(sub, mirror);
 
       // Gating: disable if previous substep is not done
       let disabled = false;
       if (idx > 0) {
         const prevSub = currentMainStep.substeps[idx - 1];
-        const prevDone = isFieldCompleted(
-          prevSub.fieldKey,
-          mirror[prevSub.fieldKey],
-          prevSub.type
-        );
+        const prevDone = isSubstepCompleted(prevSub, mirror);
         disabled = !prevDone;
       }
 
+      // Get completed date if available
+      // For GROUP substeps, use the first field's CompletedAt
+      let completedAtKey: string;
+      if (sub.type === "GROUP" && sub.fields && sub.fields.length > 0) {
+        completedAtKey = `${sub.fields[0].fieldKey}__CompletedAt`;
+      } else {
+        completedAtKey = `${sub.fieldKey || sub.key}__CompletedAt`;
+      }
+      const completedAt = mirror[completedAtKey] ? String(mirror[completedAtKey]) : undefined;
+
       return {
-        key: sub.fieldKey,
+        key: sub.key,
         title: getTranslation(lang, sub.labelKey),
         disabled,
         done,
+        completedAt,
       };
     });
   }, [currentMainStep, mirror, lang]);
@@ -182,7 +196,8 @@ export default function OnboardingTrackerContent({
     if (substepsUI.length === 0) return;
     const firstIncomplete = substepsUI.findIndex((s) => !s.done);
     setCurrentSubstepIndex(firstIncomplete >= 0 ? firstIncomplete : 0);
-  }, [currentMainStepIndex, substepsUI.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMainStepIndex]);
 
   // Current substep
   const currentSubstep: SubstepDefinition | undefined =
@@ -190,11 +205,7 @@ export default function OnboardingTrackerContent({
 
   const currentSubstepCompleted = useMemo(() => {
     if (!currentSubstep || !mirror) return false;
-    return isFieldCompleted(
-      currentSubstep.fieldKey,
-      mirror[currentSubstep.fieldKey],
-      currentSubstep.type
-    );
+    return isSubstepCompleted(currentSubstep, mirror);
   }, [currentSubstep, mirror]);
 
   // Overall progress
@@ -203,7 +214,7 @@ export default function OnboardingTrackerContent({
     if (total === 0) return { percent: 100, done: 0, total: 0 };
 
     const done = allSubsteps.filter((sub) =>
-      isFieldCompleted(sub.fieldKey, mirror?.[sub.fieldKey], sub.type)
+      mirror ? isSubstepCompleted(sub, mirror) : false
     ).length;
 
     const percent = Math.round((done / total) * 100);
@@ -226,7 +237,14 @@ export default function OnboardingTrackerContent({
   const handleMarkComplete = async () => {
     if (!currentSubstep || currentSubstepCompleted) return;
 
-    setUpdatingField(currentSubstep.fieldKey);
+    // GROUP substeps handle their own saving logic
+    if (currentSubstep.type === "GROUP") {
+      message.info("Este subpaso se guarda mediante el formulario interno");
+      return;
+    }
+
+    const fieldKey = currentSubstep.fieldKey || currentSubstep.key;
+    setUpdatingField(fieldKey);
 
     try {
       const token = getToken();
@@ -236,7 +254,7 @@ export default function OnboardingTrackerContent({
       }
 
       const value = currentSubstep.type === "BOOLEAN" ? true : "COMPLETED";
-      await updateField(token, clienteId, currentSubstep.fieldKey, value);
+      await updateField(token, clienteId, fieldKey, value);
       message.success(t.ui.fieldUpdated);
 
       await fetchDetail();
@@ -284,9 +302,10 @@ export default function OnboardingTrackerContent({
       throw new Error("Missing token");
     }
 
+    const substepKey = currentSubstep.fieldKey || currentSubstep.key;
     await addNote(token, clienteId, {
       scopeType: "SUBSTEP",
-      substepKey: currentSubstep.fieldKey,
+      substepKey: substepKey,
       visibility: "PUBLIC",
       body,
     });
@@ -297,6 +316,11 @@ export default function OnboardingTrackerContent({
   const handleSupport = () => {
     window.open("mailto:customersuccess.es@tdsynnex.com", "_self");
   };
+
+  // Show warning if manufacturer is invalid/unknown (must be before early returns)
+  const showManufacturerWarning = useMemo(() => {
+    return onboarding?.Manufacturer && !isValidManufacturer(onboarding.Manufacturer);
+  }, [onboarding]);
 
   if (loading) {
     return (
@@ -340,13 +364,8 @@ export default function OnboardingTrackerContent({
     );
   }
 
-  // Show warning if manufacturer is invalid/unknown
-  const showManufacturerWarning = useMemo(() => {
-    return onboarding?.Manufacturer && !isValidManufacturer(onboarding.Manufacturer);
-  }, [onboarding]);
-
   return (
-    <div style={{ height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {showManufacturerWarning && (
         <Alert
           message="Manufacturer desconocido"
@@ -357,9 +376,9 @@ export default function OnboardingTrackerContent({
           style={{ marginBottom: 16 }}
         />
       )}
-      <Row gutter={[16, 16]} style={{ flex: 1, minHeight: 0 }}>
+      <Row gutter={[16, 16]}>
         {/* Left Column: Combined tracker card */}
-        <Col xs={24} xl={16} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <Col xs={24} xl={16}>
           {currentSubstep && (
             <CombinedTrackerCard
               currentStepIndex={currentMainStepIndex}
@@ -379,27 +398,35 @@ export default function OnboardingTrackerContent({
               title={getTranslation(lang, currentSubstep.labelKey)}
               description={getTranslation(lang, currentSubstep.instructionsKey)}
               loading={!!updatingField}
-              noteContextKey={currentSubstep.fieldKey}
+              noteContextKey={currentSubstep.fieldKey || currentSubstep.key}
               onSaveNote={handleAddSubstepNote}
               onMarkComplete={handleMarkComplete}
               onSupport={handleSupport}
-              canComplete={!currentSubstepCompleted}
+              canComplete={!currentSubstepCompleted && currentSubstep.type !== "GROUP"}
               t={t}
+              substepKey={currentSubstep.key}
+              manufacturer={onboarding?.Manufacturer}
+              completedAt={substepsUI[currentSubstepIndex]?.completedAt}
+              clienteId={clienteId}
+              token={getToken() || undefined}
+              organizationName={onboarding?.PartnerName}
+              onFieldUpdated={fetchDetail}
+              mirror={mirror || undefined}
+              currentSubstep={currentSubstep}
             />
           )}
         </Col>
 
         {/* Right Column: Progress/User Info + Notes */}
-        <Col xs={24} xl={8} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <Col xs={24} xl={8}>
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: 16,
-              height: "100%",
             }}
           >
-            <Row gutter={[16, 16]} style={{ flexShrink: 0 }}>
+            <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
                 <OverallProgressCard
                   percent={overallProgress.percent}
@@ -418,7 +445,7 @@ export default function OnboardingTrackerContent({
                 />
               </Col>
             </Row>
-            <div style={{ minHeight: 0, flex: 1 }}>
+            <div>
               <NotesCard
                 notes={generalNotes}
                 currentUserId={currentUserId}

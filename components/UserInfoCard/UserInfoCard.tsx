@@ -33,7 +33,7 @@ export function UserInfoCard({
     <Card
       style={{
         ...cardBaseStyle,
-        minHeight: "250px",
+        aspectRatio: "1",
       }}
       styles={{
         body: {
@@ -42,28 +42,29 @@ export function UserInfoCard({
           justifyContent: "space-between",
           height: "100%",
           padding: "24px",
+          overflow: "hidden",
         },
       }}
     >
-      <Space direction="vertical" size={4} style={{ textAlign: "center", width: "100%" }}>
-        <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
+      <Space direction="vertical" size={2} style={{ textAlign: "center", width: "100%", overflow: "hidden" }}>
+        <Title level={5} style={{ margin: 0, marginBottom: 2, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {name}
         </Title>
-        <Text type="secondary" style={{ fontSize: 13 }}>
+        <Text type="secondary" style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
           {jobTitle}
         </Text>
       </Space>
 
-      <Divider style={{ margin: "16px 0", borderColor: "var(--tracker-card-border)" }} />
+      <Divider style={{ margin: "12px 0", borderColor: "var(--tracker-card-border)" }} />
 
-      <Space size={8} style={{ width: "100%", justifyContent: "center" }}>
+      <Space size={6} style={{ width: "100%", justifyContent: "center" }}>
         {phone && (
           <Tooltip title={phone} placement="bottom">
             <Button
               type="default"
               icon={<PhoneOutlined />}
               shape="circle"
-              size="large"
+              size="middle"
               className="user-info-icon-button"
               onClick={() => window.open(`tel:${phone}`, "_self")}
             />
@@ -74,7 +75,7 @@ export function UserInfoCard({
             type="default"
             icon={<MailOutlined />}
             shape="circle"
-            size="large"
+            size="middle"
             className="user-info-icon-button"
             onClick={() => window.open(`mailto:${email}`, "_self")}
           />
@@ -85,7 +86,7 @@ export function UserInfoCard({
               type="default"
               icon={<MailOutlined />}
               shape="circle"
-              size="large"
+              size="middle"
               className="user-info-icon-button"
               onClick={() => window.open(`mailto:${secondaryEmail}`, "_self")}
             />

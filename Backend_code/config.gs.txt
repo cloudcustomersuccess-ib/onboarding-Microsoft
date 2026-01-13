@@ -15,6 +15,16 @@ const CONFIG = {
     USER_ONBOARDINGS: "UserOnboardings",
     NOTES: "Notes",
     AUDIT: "AuditLog",
+
+    // ✅ NUEVO: submissions del form AWS Registration
+    AWS_REGISTRATION_SUBMISSIONS: "AwsRegistrationSubmissions",
+  },
+
+  // ✅ NUEVO: configuración de FORMS (endpoint público protegido por secret)
+  FORMS: {
+    // Secret que debe venir en req.body.secret (o query.secret) para /forms/aws-registration/save
+    // Cámbialo por uno largo y aleatorio.
+    AWS_REGISTRATION_SECRET: "CHANGE_ME_TO_A_LONG_RANDOM_SECRET",
   },
 
   // 3) OTP
@@ -38,8 +48,7 @@ const CONFIG = {
     // Secret opcional (recomendado) que validará el Flow
     OUTLOOK_FLOW_SECRET: "nkyXizhzqhCykbggdAkvLG8w",
 
-    // ✅ NUEVO: nombre del campo que enviamos al Flow para validar
-    // (Tu condición en Power Automate debería comprobar body.secret == OUTLOOK_FLOW_SECRET)
+    // nombre del campo que enviamos al Flow para validar
     SECRET_FIELD: "secret",
   },
 
@@ -125,9 +134,7 @@ const SP_INTERNAL_FIELD_MAP = {
 };
 
 /**
- * ✅ NUEVO helper:
  * Construye el body para el Flow de Outlook, incluyendo SIEMPRE el secret.
- * Úsalo en la función que haga UrlFetchApp.fetch(CONFIG.EMAIL.OUTLOOK_FLOW_URL, ...).
  *
  * @param {Object} emailData - { to, subject, htmlBody, ... }
  * @returns {Object} payload listo para enviar a Power Automate

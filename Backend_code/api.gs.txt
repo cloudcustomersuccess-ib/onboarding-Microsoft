@@ -1,157 +1,764 @@
 /**
- * AUTH: OTP por email enviado via Power Automate + Outlook.
- * Guardamos OTP temporalmente en PropertiesService.
+ * API ROUTER
+ * Nota: En Web Apps de Apps Script no es fiable leer headers.
+ * Por eso el token se acepta por:
+ *  - req.query.token
+ *  - req.body.token
  */
 
-function requestOtp_(email) {
-  email = String(email || "").trim().toLowerCase();
-  if (!email) throw new Error("Email requerido");
+function apiHandle_(req) {
+  const path = (req.path || "/").toLowerCase();
 
-  const otp = generateOtp_();
-  const expiresAt = Date.now() + CONFIG.OTP.TTL_MINUTES * 60 * 1000;
+  // Public endpoints
+  if (path === "/auth/request-otp") return respond_(req, requestOtp_(req.body.email));
+  if (path === "/auth/verify-otp") return respond_(req, verifyOtp_(req.body.email, req.body.otp));
 
-  const props = PropertiesService.getScriptProperties();
-  props.setProperty(`otp:${email}`, JSON.stringify({ otp, expiresAt }));
+  // ✅ NUEVO: Guardar submission del form AWS Registration (público pero protegido por secret)
+  if (path === "/forms/aws-registration/save") {
+    return respond_(req, saveAwsRegistrationSubmission_(req));
+  }
 
-  // Enviar OTP por Outlook (Power Automate)
-  sendEmailViaOutlook_(email, otp);
+  // Sync endpoint (protegido por secret en query o body)
+  if (path === "/sync/sharepoint") return respond_(req, syncFromSharePoint_(req));
 
-  return { ok: true };
+  // Protected endpoints
+  const auth = getAuth_(req);
+  const user = auth.user;
+
+  if (path === "/onboardings") return respond_(req, listOnboardings_(user));
+
+  const m1 = path.match(/^\/onboardings\/([^\/]+)$/);
+  if (m1) return respond_(req, getOnboardingDetail_(user, decodeURIComponent(m1[1])));
+
+  const m2 = path.match(/^\/onboardings\/([^\/]+)\/fields$/);
+  if (m2) {
+    const clienteId = decodeURIComponent(m2[1]);
+    return respond_(req, updateField_(user, clienteId, req.body.fieldKey, req.body.value));
+  }
+
+  const m3 = path.match(/^\/onboardings\/([^\/]+)\/notes$/);
+  if (m3) {
+    const clienteId = decodeURIComponent(m3[1]);
+    return respond_(req, addNote_(user, clienteId, req.body));
+  }
+
+  return respond_(req, { error: "Not found" }, 404);
 }
 
-function verifyOtp_(email, otp) {
-  email = String(email || "").trim().toLowerCase();
-  otp = String(otp || "").trim();
+function getAuth_(req) {
+  const token =
+    String(req.query.token || "").trim() ||
+    String(req.body.token || "").trim();
 
-  const props = PropertiesService.getScriptProperties();
-  const raw = props.getProperty(`otp:${email}`);
-  if (!raw) throw new Error("OTP no encontrado o caducado");
+  if (!token) throw new Error("Missing token (usa ?token=... o body.token)");
 
-  const data = JSON.parse(raw);
-  if (Date.now() > data.expiresAt) {
-    props.deleteProperty(`otp:${email}`);
-    throw new Error("OTP caducado");
+  const payload = verifyToken_(token);
+  return { user: payload };
+}
+
+/**
+ * Respuesta JSON o JSONP (si viene ?callback=...)
+ * ✅ ROBUSTO: usamos HtmlService para evitar el 302 redirect que aparece con ContentService
+ * en algunas integraciones (Power Automate / tenants restrictivos).
+ *
+ * Nota: HtmlService devuelve Content-Type text/html, pero el body es JSON puro.
+ * A Power Automate le sirve y evita el redirect.
+ */
+function respond_(req, obj, status) {
+  status = status || 200; // (Apps Script Web App no permite setear status fácilmente con HtmlService)
+
+  const callback = String(req.query.callback || "").trim();
+  if (callback) {
+    const safeCb = callback.replace(/[^\w$.]/g, "");
+    const js = `${safeCb}(${JSON.stringify(obj)});`;
+    return HtmlService.createHtmlOutput(js);
   }
-  if (otp !== String(data.otp)) throw new Error("OTP incorrecto");
 
-  props.deleteProperty(`otp:${email}`);
+  return HtmlService.createHtmlOutput(JSON.stringify(obj));
+}
 
-  const user = findUserByEmail_(email);
-  if (!user) throw new Error("Usuario no existe en Users o IsActive=false (si lo aplicas)");
+/* =========================
+   ✅ NUEVO: FORMS (AWS Registration)
+   ========================= */
 
-  const token = signToken_({
+/**
+ * Endpoint: POST /forms/aws-registration/save
+ * Espera:
+ *  req.body.secret (o req.query.secret) == CONFIG.FORMS.AWS_REGISTRATION_SECRET
+ *  req.body.data = { partnerLegalName, legalRepName, email, partnerPathType, ... }
+ *  opcional: req.body.userEmail
+ */
+function saveAwsRegistrationSubmission_(req) {
+  requireAwsFormSecret_(req);
+
+  const body = req.body || {};
+  const data = body.data || {};
+
+  // Validación mínima (puedes endurecerla si quieres)
+  const partnerLegalName = String(data.partnerLegalName || "").trim();
+  const legalRepName = String(data.legalRepName || "").trim();
+  const email = String(data.email || "").trim();
+
+  if (!partnerLegalName) throw new Error("partnerLegalName requerido");
+  if (!legalRepName) throw new Error("legalRepName requerido");
+  if (!email) throw new Error("email requerido");
+
+  const submissionId = `AWSFORM-${Utilities.getUuid()}`;
+  const createdAt = now_ ? now_() : new Date().toISOString(); // compat con tu helper now_()
+
+  const sh = getSheet_(CONFIG.SHEETS.AWS_REGISTRATION_SUBMISSIONS);
+
+  // Si la sheet está vacía (sin headers), no rompemos: intentamos append igual
+  sh.appendRow([
+    submissionId,
+    createdAt,
+    String(body.userEmail || ""),
+    partnerLegalName,
+    legalRepName,
     email,
-    userId: user.UserId,
-    role: user.Role,
-    orgId: user.OrganizationId || "",
-    exp: Date.now() + 8 * 60 * 60 * 1000, // 8h
+    String(data.partnerPathType || ""),
+    String(data.partnerTier || ""),
+    String(data.apnId || ""),
+    String(data.solutionProvider || ""),
+    String(data.awsCompetency || ""),
+    String(data.reservedInstances || ""),
+    String(data.dedicatedOrg || ""),
+    String(data.customerDedicatedOrg || ""),
+    String(data.supportPlan || ""),
+    JSON.stringify(data),
+  ]);
+
+  // Opcional: audit
+  try {
+    auditLog_({
+      AuditId: `AUD-${Utilities.getUuid()}`,
+      ClienteID: String(body.clienteId || ""), // si algún día lo mandas
+      FieldKey: "AWS_REGISTRATION_FORM_SUBMIT",
+      OldValue: "",
+      NewValue: JSON.stringify({ submissionId, email }),
+      Action: "FORM_SUBMIT",
+      ActorUserId: String(body.userEmail || "ANON"),
+      ActorRole: "SYSTEM",
+      Source: "UI_FORM",
+      Timestamp: createdAt,
+      CorrelationId: `CORR-${Utilities.getUuid()}`,
+    });
+  } catch (_) {}
+
+  return { ok: true, submissionId };
+}
+
+function requireAwsFormSecret_(req) {
+  const secret =
+    String((req.body && req.body.secret) || "").trim() ||
+    String((req.query && req.query.secret) || "").trim();
+
+  const expected = String(CONFIG.FORMS && CONFIG.FORMS.AWS_REGISTRATION_SECRET || "").trim();
+
+  if (!expected) throw new Error("CONFIG.FORMS.AWS_REGISTRATION_SECRET no configurado");
+  if (!secret || secret !== expected) throw new Error("Unauthorized (bad secret)");
+}
+
+/* =========================
+   LÓGICA: Onboardings
+   ========================= */
+
+function listOnboardings_(user) {
+  const sh = getSheet_(CONFIG.SHEETS.ONBOARDINGS);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return { items: [] };
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  const rows = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn()).getValues();
+
+  const items = rows.map(r => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = r[i]);
+    return obj;
   });
 
-  return { token, user };
+  if (user.role === CONFIG.ROLES.USER) {
+    return { items: items.filter(x => String(x.OrganizationId || "") === String(user.orgId || "")) };
+  }
+  return { items };
 }
 
-function sendEmailViaOutlook_(toEmail, otp) {
-  if (!CONFIG.EMAIL.OUTLOOK_FLOW_URL) {
-    throw new Error("CONFIG.EMAIL.OUTLOOK_FLOW_URL está vacío");
+function getOnboardingDetail_(user, clienteId) {
+  const rowOnb = findRowByClienteId_(CONFIG.SHEETS.ONBOARDINGS, clienteId);
+  if (rowOnb === -1) throw new Error("Onboarding no encontrado");
+
+  const onboarding = readRowAsObject_(CONFIG.SHEETS.ONBOARDINGS, rowOnb);
+
+  if (user.role === CONFIG.ROLES.USER) {
+    if (String(onboarding.OrganizationId || "") !== String(user.orgId || "")) {
+      throw new Error("No autorizado");
+    }
   }
 
-  // Payload base del email
-  const basePayload = {
-    to: toEmail,
-    subject: "Tu código de acceso (OTP) - Partner Onboarding",
-    htmlBody: `<p>Tu código es: <b style="font-size:18px">${otp}</b></p>
-               <p>Caduca en ${CONFIG.OTP.TTL_MINUTES} minutos.</p>`,
-    otp,
-    ttlMinutes: CONFIG.OTP.TTL_MINUTES,
+  const rowMirror = findRowByClienteId_(CONFIG.SHEETS.MIRROR, clienteId);
+  const mirror = rowMirror === -1 ? null : readRowAsObject_(CONFIG.SHEETS.MIRROR, rowMirror);
+
+  const notes = readNotes_(clienteId);
+
+  return { onboarding, mirror, notes };
+}
+
+function readNotes_(clienteId) {
+  const sh = getSheet_(CONFIG.SHEETS.NOTES);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return [];
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  const rows = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn()).getValues();
+
+  return rows
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = r[i]);
+      return obj;
+    })
+    .filter(n => String(n.ClienteID) === String(clienteId));
+}
+
+/* =========================
+   LÓGICA: Update Field + timestamps + audit
+   ========================= */
+
+function updateField_(user, clienteId, fieldKey, value) {
+  fieldKey = String(fieldKey || "").trim();
+  if (!fieldKey) throw new Error("fieldKey requerido");
+
+  if (user.role === CONFIG.ROLES.USER && !PARTNER_EDITABLE_FIELDS.has(fieldKey)) {
+    throw new Error("No autorizado para editar este campo");
+  }
+
+  const rowOnb = findRowByClienteId_(CONFIG.SHEETS.ONBOARDINGS, clienteId);
+  if (rowOnb === -1) throw new Error("Onboarding no encontrado");
+
+  const onboarding = readRowAsObject_(CONFIG.SHEETS.ONBOARDINGS, rowOnb);
+  if (user.role === CONFIG.ROLES.USER) {
+    if (String(onboarding.OrganizationId || "") !== String(user.orgId || "")) {
+      throw new Error("No autorizado");
+    }
+  }
+
+  const rowMirror = findRowByClienteId_(CONFIG.SHEETS.MIRROR, clienteId);
+  if (rowMirror === -1) throw new Error("Mirror no encontrado para este onboarding");
+
+  const before = readRowAsObject_(CONFIG.SHEETS.MIRROR, rowMirror);
+  const oldValue = before[fieldKey];
+
+  const type = FIELD_TYPES[fieldKey] || "BOOLEAN";
+  let newValue = value;
+
+  if (type === "BOOLEAN") {
+    const s = String(value).toLowerCase().trim();
+    newValue = (value === true || s === "true" || s === "1");
+  } else {
+    newValue = String(value || "").trim();
+  }
+
+  writeField_(CONFIG.SHEETS.MIRROR, rowMirror, fieldKey, newValue);
+
+  const now = now_();
+
+  // UpdatedAt
+  const updatedAtKey = `${fieldKey}__UpdatedAt`;
+  try { writeField_(CONFIG.SHEETS.MIRROR, rowMirror, updatedAtKey, now); } catch (_) {}
+
+  // CompletedAt (boolean -> true)
+  if (type === "BOOLEAN" && newValue === true) {
+    const completedAtKey = `${fieldKey}__CompletedAt`;
+    try {
+      const currentCompletedAt = before[completedAtKey];
+      if (!currentCompletedAt) writeField_(CONFIG.SHEETS.MIRROR, rowMirror, completedAtKey, now);
+    } catch (_) {}
+  }
+
+  const correlationId = `CORR-${Utilities.getUuid()}`;
+
+  // Audit del cambio en Google
+  auditLog_({
+    AuditId: `AUD-${Utilities.getUuid()}`,
+    ClienteID: clienteId,
+    FieldKey: fieldKey,
+    OldValue: String(oldValue),
+    NewValue: String(newValue),
+    Action: type === "BOOLEAN" ? (newValue ? "SET_TRUE" : "SET_FALSE") : "UPDATE_TEXT",
+    ActorUserId: user.userId,
+    ActorRole: user.role,
+    Source: user.role === CONFIG.ROLES.ADMIN ? "UI_ADMIN" : "UI_PARTNER",
+    Timestamp: now,
+    CorrelationId: correlationId,
+  });
+
+  // Empujar a SharePoint vía Flow C (ValidateUpdateListItem)
+  try {
+    pushSharePointUpdate_(clienteId, fieldKey, newValue, correlationId);
+  } catch (err) {
+    auditLog_({
+      AuditId: `AUD-${Utilities.getUuid()}`,
+      ClienteID: clienteId,
+      FieldKey: `SP_PUSH_FAILED:${fieldKey}`,
+      OldValue: "",
+      NewValue: String(err && (err.message || err)),
+      Action: "SP_PUSH_FAILED",
+      ActorUserId: user.userId,
+      ActorRole: user.role,
+      Source: "SYSTEM",
+      Timestamp: now_(),
+      CorrelationId: correlationId,
+    });
+  }
+
+  return { ok: true, fieldKey, value: newValue };
+}
+
+/* =========================
+   LÓGICA: Notes
+   ========================= */
+
+function addNote_(user, clienteId, payload) {
+  const visibility = String(payload.visibility || "PUBLIC").toUpperCase();
+  const scopeType = String(payload.scopeType || "GENERAL").toUpperCase();
+  const substepKey = String(payload.substepKey || "").trim();
+  const body = String(payload.body || "").trim();
+  if (!body) throw new Error("Body requerido");
+
+  const noteId = `NOTE-${Utilities.getUuid()}`;
+  const sh = getSheet_(CONFIG.SHEETS.NOTES);
+
+  sh.appendRow([
+    noteId,
+    clienteId,
+    scopeType,
+    substepKey,
+    visibility,
+    user.userId,
+    body,
+    now_(),
+  ]);
+
+  auditLog_({
+    AuditId: `AUD-${Utilities.getUuid()}`,
+    ClienteID: clienteId,
+    FieldKey: scopeType === "SUBSTEP" ? substepKey : "GENERAL_NOTE",
+    OldValue: "",
+    NewValue: body,
+    Action: "NOTE_ADD",
+    ActorUserId: user.userId,
+    ActorRole: user.role,
+    Source: user.role === CONFIG.ROLES.ADMIN ? "UI_ADMIN" : "UI_PARTNER",
+    Timestamp: now_(),
+    CorrelationId: `CORR-${Utilities.getUuid()}`,
+  });
+
+  return { ok: true, noteId };
+}
+
+/* =========================
+   Sync desde SharePoint (ALINEADO A TUS COLUMNAS)
+   ========================= */
+
+/* =========================
+   Sync desde SharePoint (ALINEADO A TUS COLUMNAS)
+   ========================= */
+
+function syncFromSharePoint_(req) {
+  // 1) Secret (recomendado)
+  const secret = String((req.body && req.body.secret) || "").trim();
+  if (CONFIG.SYNC.SHAREPOINT_SECRET && secret !== CONFIG.SYNC.SHAREPOINT_SECRET) {
+    throw new Error("SYNC secret inválido");
+  }
+
+  const body = req.body || {};
+
+  // 2) Validación mínima
+  const clienteId = String(body.ClienteID || "").trim();
+  if (!clienteId) throw new Error("Payload inválido: falta ClienteID");
+
+  const spItemId = body.SP_ItemId;
+  if (spItemId === undefined || spItemId === null || spItemId === "") {
+    throw new Error("Payload inválido: falta SP_ItemId (SharePoint system ID)");
+  }
+
+  const eventType = String(body.eventType || "CREATED").toUpperCase();
+  const now = now_();
+
+  // Fields del payload
+  const fields = body.Fields || {};
+  if (typeof fields !== "object") throw new Error("Payload inválido: Fields debe ser objeto");
+
+  // === Inputs desde payload (con fallbacks robustos) ===
+  const resellerGK = String(
+    safeGet_(fields, "Reseller_GK", safeGet_(body, "Reseller_GK", ""))
+  ).trim();
+
+  // ✅ CAMBIO: email viene como PartnerEmail (PA actualizado)
+  const primaryEmail = String(
+    safeGet_(body, "PartnerEmail",
+      safeGet_(body, "Reseller_Contact_Email",
+        safeGet_(fields, "Reseller_Contact_Email",
+          safeGet_(body, "Partner_Contact_Email", "")
+        )
+      )
+    )
+  ).trim();
+
+  const primaryName = String(
+    safeGet_(fields, "Reseller_Contact_Name", safeGet_(body, "Reseller_Contact_Name", ""))
+  ).trim();
+
+  const primarySurname = String(
+    safeGet_(fields, "Surname", safeGet_(body, "Reseller_Surname", ""))
+  ).trim();
+
+  // ✅ CAMBIO: PartnerName viene en raíz (PA actualizado) o fallbacks
+  const partnerName = String(
+    safeGet_(body, "PartnerName",
+      safeGet_(body, "Partner_Name_",
+        safeGet_(body, "Reseller_Name_",
+          safeGet_(fields, "Reseller_Name_",
+            safeGet_(fields, "Reseller_Name", safeGet_(body, "Reseller_Name", ""))
+          )
+        )
+      )
+    )
+  ).trim();
+
+  const language = String(safeGet_(body, "Language", "")).trim();
+  const manufacturerNorm = normalizeManufacturers_(safeGet_(body, "Manufacturer", ""));
+  const status = String(safeGet_(body, "Status", "")).trim();
+
+  // 2.1) Resolver OrganizationId (NO usamos Reseller_GK como orgId)
+  const orgId = resolveOrgIdForCliente_(clienteId, body);
+
+  const debug = {
+    clienteId,
+    spItemId: Number(spItemId),
+    eventType,
+    orgId,
+    resellerGK,
+    partnerName,
+    primaryEmail,
+    primaryName,
+    primarySurname,
+    language,
+    manufacturer: manufacturerNorm,
+    status,
+    wrote: {},
+    warnings: [],
   };
 
-  // ✅ CRÍTICO: incluir secret en el BODY para que Power Automate lo pueda validar
-  // Usa helper de Config.gs. Si no existiera, hacemos fallback.
-  const payload = (typeof buildOutlookFlowPayload_ === "function")
-    ? buildOutlookFlowPayload_(basePayload)
-    : Object.assign({}, basePayload, { secret: CONFIG.EMAIL.OUTLOOK_FLOW_SECRET });
+  if (!primaryEmail) debug.warnings.push("primaryEmail vacío (no se creará user)");
+  if (!partnerName) debug.warnings.push("partnerName vacío (no se rellenará PartnerName/OrganizationName)");
+  if (!resellerGK) debug.warnings.push("resellerGK vacío (no se rellenará Reseller_GK en Organizations)");
 
-  const res = UrlFetchApp.fetch(CONFIG.EMAIL.OUTLOOK_FLOW_URL, {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
+  // 2.2) Upsert Organizations (OrganizationId, OrganizationName, Domains, CreatedAt, Reseller_GK)
+  if (orgId) {
+    const orgData = {
+      OrganizationId: orgId,
+      OrganizationName: partnerName || orgId,
+      Reseller_GK: resellerGK,
+    };
 
-    // (Opcional) dejamos también el header por compatibilidad/extra seguridad,
-    // pero el condition de PA debe mirar el body.secret
-    headers: {
-      "x-flow-secret": CONFIG.EMAIL.OUTLOOK_FLOW_SECRET || "",
-    },
+    const upOrg = upsertByKey_(CONFIG.SHEETS.ORGS, "OrganizationId", orgId, orgData);
+
+    // CreatedAt solo si se crea
+    if (upOrg && upOrg.created && upOrg.row) {
+      try { writeField_(CONFIG.SHEETS.ORGS, upOrg.row, "CreatedAt", now); } catch (_) {}
+    }
+
+    debug.wrote.organizations = { created: !!upOrg.created, row: upOrg.row || null };
+  }
+
+  // 2.3) Upsert Users (UserId, Name, Surname, Email, Role, OrganizationId, IsActive, PreferredLanguage, CreatedAt)
+  let userId = "";
+  if (primaryEmail) {
+    userId = `USR-${primaryEmail.toLowerCase()}`;
+
+    const userData = {
+      UserId: userId,
+      Name: primaryName,
+      Surname: primarySurname,
+      Email: primaryEmail,
+      Role: "User",
+      OrganizationId: orgId || "",
+      IsActive: true,
+      PreferredLanguage: language || "",
+    };
+
+    const upUser = upsertByKey_(CONFIG.SHEETS.USERS, "UserId", userId, userData);
+
+    // CreatedAt solo si se crea
+    if (upUser && upUser.created && upUser.row) {
+      try { writeField_(CONFIG.SHEETS.USERS, upUser.row, "CreatedAt", now); } catch (_) {}
+    }
+
+    debug.wrote.users = { created: !!upUser.created, row: upUser.row || null, userId };
+  }
+
+  // 2.4) Upsert UserOnboardings (UserId, ClienteID, AccessRole, CreatedAt)
+  if (userId) {
+    const linkRes = upsertUserOnboardingLink_(userId, clienteId, "User");
+    debug.wrote.userOnboardings = linkRes || { ok: true };
+  }
+
+  // 3) Upsert ONBOARDINGS (Manufacturer, Language, Status, OrganizationId, PrimaryContactEmail, PartnerName, CreatedAt, UpdatedAt, LastSource, Versión)
+  const onboardingData = {
+    ClienteID: clienteId,
+    Manufacturer: manufacturerNorm,
+    Language: language,
+    Status: status,
+    OrganizationId: orgId || "",
+    PrimaryContactEmail: primaryEmail,
+    PartnerName: partnerName,
+    UpdatedAt: now,
+    LastSource: "POWER_AUTOMATE",
+  };
+
+  const upOnb = upsertByClienteId_(CONFIG.SHEETS.ONBOARDINGS, clienteId, onboardingData);
+
+  // CreatedAt solo si se crea
+  if (upOnb && upOnb.created && upOnb.row) {
+    try { writeField_(CONFIG.SHEETS.ONBOARDINGS, upOnb.row, "CreatedAt", now); } catch (_) {}
+  }
+
+  debug.wrote.onboardings = { created: !!upOnb.created, row: upOnb.row || null };
+
+  // 4) Upsert MIRROR (pasos/fields)
+  const mirrorData = { ClienteID: clienteId };
+  Object.keys(fields).forEach((k) => {
+    mirrorData[k] = fields[k];
+  });
+  mirrorData.LastSyncAt = now;
+
+  const upMirror = upsertByClienteId_(CONFIG.SHEETS.MIRROR, clienteId, mirrorData);
+  debug.wrote.mirror = { created: !!upMirror.created, row: upMirror.row || null, fieldsCount: Object.keys(fields).length };
+
+  // 5) Audit
+  auditLog_({
+    AuditId: `AUD-${Utilities.getUuid()}`,
+    ClienteID: clienteId,
+    FieldKey: "SYNC_FROM_SHAREPOINT",
+    OldValue: "",
+    NewValue: JSON.stringify(debug),
+    Action: "SYNC",
+    ActorUserId: "SYSTEM",
+    ActorRole: "SYSTEM",
+    Source: "POWER_AUTOMATE",
+    Timestamp: now,
+    CorrelationId: `CORR-${Utilities.getUuid()}`,
   });
 
-  const code = res.getResponseCode();
-  if (code < 200 || code >= 300) {
-    throw new Error(`Error enviando OTP vía Outlook Flow. HTTP ${code}: ${res.getContentText()}`);
-  }
-
-  return { ok: true };
+  return {
+    ok: true,
+    clienteId,
+    spItemId: Number(spItemId),
+    orgId,
+    debug,
+  };
 }
 
-function generateOtp_() {
-  const len = CONFIG.OTP.LENGTH;
-  let s = "";
-  for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 10);
-  return s;
-}
+/* =========================
+   HELPERS: upsert + safeGet (+ link + org resolver)
+   ========================= */
 
-function tokenSecret_() {
-  const props = PropertiesService.getScriptProperties();
-  let secret = props.getProperty("TOKEN_SECRET");
-  if (!secret) {
-    secret = Utilities.getUuid();
-    props.setProperty("TOKEN_SECRET", secret);
-  }
-  return secret;
-}
-
-function signToken_(payload) {
-  const body = Utilities.base64EncodeWebSafe(JSON.stringify(payload));
-  const sig = Utilities.base64EncodeWebSafe(
-    Utilities.computeHmacSha256Signature(body, tokenSecret_())
-  );
-  return `${body}.${sig}`;
-}
-
-function verifyToken_(token) {
-  token = String(token || "");
-  const parts = token.split(".");
-  if (parts.length !== 2) throw new Error("Token inválido");
-
-  const [body, sig] = parts;
-  const expectedSig = Utilities.base64EncodeWebSafe(
-    Utilities.computeHmacSha256Signature(body, tokenSecret_())
-  );
-  if (sig !== expectedSig) throw new Error("Firma inválida");
-
-  const payload = JSON.parse(
-    Utilities.newBlob(Utilities.base64DecodeWebSafe(body)).getDataAsString()
-  );
-
-  if (Date.now() > payload.exp) throw new Error("Token caducado");
-  return payload;
-}
-
-function findUserByEmail_(email) {
-  const sh = getSheet_(CONFIG.SHEETS.USERS);
+function upsertByClienteId_(sheetName, clienteId, data) {
+  const sh = getSheet_(sheetName);
   const hm = getHeaderMap_(sh);
-  const colEmail = hm["Email"];
-  if (!colEmail) throw new Error("Users no tiene columna Email");
+
+  if (!hm["ClienteID"]) throw new Error(`${sheetName} no tiene columna ClienteID`);
+
+  const row = findRowByClienteId_(sheetName, clienteId);
+
+  if (row === -1) {
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    const newRow = headers.map(h => (Object.prototype.hasOwnProperty.call(data, h) ? data[h] : ""));
+    sh.appendRow(newRow);
+    return { created: true, row: sh.getLastRow() };
+  }
+
+  Object.keys(data).forEach((key) => {
+    if (!hm[key]) return;
+    sh.getRange(row, hm[key]).setValue(data[key]);
+  });
+
+  return { created: false, row: row };
+}
+
+function safeGet_(obj, key, fallback) {
+  return (obj && Object.prototype.hasOwnProperty.call(obj, key)) ? obj[key] : fallback;
+}
+
+function upsertByKey_(sheetName, keyColName, keyValue, data) {
+  const sh = getSheet_(sheetName);
+  const hm = getHeaderMap_(sh);
+  if (!hm[keyColName]) throw new Error(`${sheetName} no tiene columna ${keyColName}`);
+
+  const keyCol = hm[keyColName];
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+
+  if (lastRow < 2) {
+    const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+    const newRow = headers.map(h => {
+      if (h === keyColName) return keyValue;
+      return Object.prototype.hasOwnProperty.call(data, h) ? data[h] : "";
+    });
+    sh.appendRow(newRow);
+    return { created: true, row: sh.getLastRow() };
+  }
+
+  const values = sh.getRange(2, keyCol, lastRow - 1, 1).getValues();
+  let foundRow = -1;
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0]) === String(keyValue)) {
+      foundRow = i + 2;
+      break;
+    }
+  }
+
+  if (foundRow === -1) {
+    const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+    const newRow = headers.map(h => {
+      if (h === keyColName) return keyValue;
+      return Object.prototype.hasOwnProperty.call(data, h) ? data[h] : "";
+    });
+    sh.appendRow(newRow);
+    return { created: true, row: sh.getLastRow() };
+  }
+
+  Object.keys(data).forEach((k) => {
+    if (!hm[k]) return;
+    sh.getRange(foundRow, hm[k]).setValue(data[k]);
+  });
+
+  return { created: false, row: foundRow };
+}
+
+// rellena AccessRole y CreatedAt, y no depende de LinkId
+function upsertUserOnboardingLink_(userId, clienteId, accessRole) {
+  let sh;
+  try {
+    sh = getSheet_(CONFIG.SHEETS.USER_ONBOARDINGS);
+  } catch (_) {
+    return { ok: false, error: "USER_ONBOARDINGS sheet no encontrada o CONFIG.SHEETS.USER_ONBOARDINGS incorrecto" };
+  }
+
+  const hm = getHeaderMap_(sh);
+  if (!hm["UserId"] || !hm["ClienteID"]) return { ok: false, error: "UserOnboardings: faltan columnas UserId/ClienteID" };
 
   const lastRow = sh.getLastRow();
-  if (lastRow < 2) return null;
+  const lastCol = sh.getLastColumn();
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
 
-  const emails = sh.getRange(2, colEmail, lastRow - 1, 1)
-    .getValues()
-    .flat()
-    .map(v => String(v).trim().toLowerCase());
+  const idxUser = headers.indexOf("UserId");
+  const idxCli = headers.indexOf("ClienteID");
+  const idxRole = headers.indexOf("AccessRole");
 
-  const idx = emails.findIndex(v => v === email);
-  if (idx === -1) return null;
+  // Si no hay filas, append
+  if (lastRow < 2) {
+    const row = headers.map(h => {
+      if (h === "UserId") return userId;
+      if (h === "ClienteID") return clienteId;
+      if (h === "AccessRole") return accessRole || "User";
+      if (h === "CreatedAt") return now_();
+      return "";
+    });
+    sh.appendRow(row);
+    return { ok: true, created: true, row: sh.getLastRow() };
+  }
 
-  return readRowAsObject_(CONFIG.SHEETS.USERS, idx + 2);
+  const rows = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  let foundRow = -1;
+
+  for (let i = 0; i < rows.length; i++) {
+    if (String(rows[i][idxUser]) === String(userId) && String(rows[i][idxCli]) === String(clienteId)) {
+      foundRow = i + 2;
+      break;
+    }
+  }
+
+  // Existe: opcionalmente actualiza AccessRole
+  if (foundRow !== -1) {
+    if (idxRole !== -1) {
+      try { sh.getRange(foundRow, idxRole + 1).setValue(accessRole || "User"); } catch (_) {}
+    }
+    return { ok: true, created: false, row: foundRow };
+  }
+
+  // No existe: append
+  const newRow = headers.map(h => {
+    if (h === "UserId") return userId;
+    if (h === "ClienteID") return clienteId;
+    if (h === "AccessRole") return accessRole || "User";
+    if (h === "CreatedAt") return now_();
+    return "";
+  });
+  sh.appendRow(newRow);
+
+  return { ok: true, created: true, row: sh.getLastRow() };
+}
+
+function findRowByKey_(sheetName, keyColName, keyValue) {
+  const sh = getSheet_(sheetName);
+  const hm = getHeaderMap_(sh);
+  if (!hm[keyColName]) return -1;
+
+  const keyCol = hm[keyColName];
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return -1;
+
+  const values = sh.getRange(2, keyCol, lastRow - 1, 1).getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0]) === String(keyValue)) return i + 2;
+  }
+  return -1;
+}
+
+function resolveOrgIdForCliente_(clienteId, body) {
+  const fromPayload = String(safeGet_(body, "OrganizationId", "")).trim();
+  if (fromPayload) return fromPayload;
+
+  const row = findRowByClienteId_(CONFIG.SHEETS.ONBOARDINGS, clienteId);
+  if (row !== -1) {
+    const existing = readRowAsObject_(CONFIG.SHEETS.ONBOARDINGS, row);
+    const existingOrg = String(existing.OrganizationId || "").trim();
+    if (existingOrg) return existingOrg;
+  }
+
+  return `ORG-${Utilities.getUuid()}`;
+}
+
+function normalizeManufacturers_(raw) {
+  let list = [];
+
+  if (raw === null || raw === undefined) list = [];
+  else if (Array.isArray(raw)) {
+    list = raw.map(x => {
+      if (x && typeof x === "object") return String(x.Value || x.value || "").trim();
+      return String(x || "").trim();
+    });
+  } else if (typeof raw === "object") {
+    const v = raw.Value || raw.value || "";
+    list = String(v).split(/[;,|]/).map(s => s.trim());
+  } else {
+    list = String(raw).split(/[;,|]/).map(s => s.trim());
+  }
+
+  const cleaned = list.filter(Boolean);
+  const uniq = Array.from(new Set(cleaned));
+
+  const priority = ["Microsoft", "AWS", "Amazon", "Google"];
+  uniq.sort((a, b) => {
+    const pa = priority.findIndex(p => a.toLowerCase().includes(p.toLowerCase()));
+    const pb = priority.findIndex(p => a.toLowerCase().includes(p.toLowerCase()));
+    const aa = pa === -1 ? 999 : pa;
+    const bb = pb === -1 ? 999 : pb;
+    if (aa !== bb) return aa - bb;
+    return a.localeCompare(b);
+  });
+
+  return uniq.join(", ");
 }

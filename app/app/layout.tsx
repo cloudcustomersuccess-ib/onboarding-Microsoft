@@ -191,7 +191,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      <Layout style={{ minHeight: "100vh" }}>
+      <Layout style={{ minHeight: "100vh", maxHeight: "100vh", overflow: "hidden" }}>
         <Sider
           collapsible
           collapsed={collapsed}
@@ -199,6 +199,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           width={250}
           style={{
             boxShadow: "2px 0 8px rgba(0,0,0,0.08)",
+            position: "fixed",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            overflow: "auto",
+            zIndex: 1000,
           }}
         >
           {/* Logo Header */}
@@ -257,7 +263,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           />
         </Sider>
 
-        <Layout>
+        <Layout style={{ marginLeft: collapsed ? 80 : 250, transition: "margin-left 0.2s", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
           <Header
             style={{
               padding: "0 32px",
@@ -265,11 +271,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               justifyContent: "space-between",
               boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-              position: "sticky",
+              position: "fixed",
               top: 0,
+              right: 0,
+              left: collapsed ? 80 : 250,
               zIndex: 999,
               height: "64px",
               borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #f0f0f0",
+              transition: "left 0.2s",
             }}
           >
             {/* Left: Theme Toggle */}
@@ -339,14 +348,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           <Content
             style={{
-              margin: "24px 16px",
-              overflow: "initial",
+              marginTop: "88px",
+              marginBottom: "24px",
+              marginLeft: "16px",
+              marginRight: "16px",
+              overflow: "auto",
+              flex: 1,
+              minHeight: 0,
             }}
           >
             {children}
           </Content>
 
-          <Footer style={{ textAlign: "center" }}>
+          <Footer style={{ textAlign: "center", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px" }}>
               <Image
                 src={

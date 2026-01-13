@@ -29,7 +29,15 @@ export interface TrackerTranslations {
       label: string;
       instructions: string;
     };
+    ecommerce_gk: {
+      label: string;
+      instructions: string;
+    };
     sepa_b2b_completado: {
+      label: string;
+      instructions: string;
+    };
+    rmt_ct_completado: {
       label: string;
       instructions: string;
     };
@@ -79,6 +87,19 @@ export interface TrackerTranslations {
       label: string;
       instructions: string;
     };
+    google_cloud_id_group: {
+      label: string;
+      instructions: string;
+      gc_id_label: string;
+      gc_id_placeholder: string;
+      domain_label: string;
+      domain_placeholder: string;
+      save_button: string;
+      completed_alert: string;
+      pending_alert: string;
+      info_alert: string;
+      success_message: string;
+    };
 
     // Step 3
     ion_tc_aceptados: {
@@ -89,6 +110,14 @@ export interface TrackerTranslations {
       label: string;
       instructions: string;
     };
+    access_ion: {
+      label: string;
+      instructions: string;
+    };
+    onboarding_complete: {
+      label: string;
+      instructions: string;
+    };
   };
 
   // Status labels
@@ -96,6 +125,7 @@ export interface TrackerTranslations {
     completed: string;
     pending: string;
     notStarted: string;
+    inProgress: string;
   };
 
   // UI labels
@@ -126,6 +156,7 @@ export interface TrackerTranslations {
     fieldUpdateError: string;
     loadingError: string;
     retry: string;
+    tdSynnexWillComplete: string;
   };
 }
 
@@ -143,14 +174,24 @@ export const translations: Record<Language, TrackerTranslations> = {
     },
     substeps: {
       alta_hola_tdsynnex: {
-        label: "Alta Hola TDSynnex",
+        label: "Formulario de alta en TD SYNNEX",
         instructions:
           "Completa el registro inicial en la plataforma TDSynnex. Recibirás un email de bienvenida con las instrucciones detalladas.",
       },
+      ecommerce_gk: {
+        label: "Confirmación de la cuenta en TD SYNNEX",
+        instructions:
+          "Espera la confirmación de tu cuenta. Recibirás un correo con los detalles de acceso o solicitud de información adicional.",
+      },
       sepa_b2b_completado: {
-        label: "SEPA B2B Completado",
+        label: "Solicitud de línea de crédito (SEPA B2B)",
         instructions:
           "Completa el formulario SEPA B2B para configurar los pagos. Asegúrate de tener los datos bancarios correctos.",
+      },
+      rmt_ct_completado: {
+        label: "Confirmación de condiciones de crédito",
+        instructions:
+          "El equipo financiero revisará tu solicitud y asignará las condiciones de crédito. Recibirás una confirmación por correo.",
       },
       alta_pac_mft: {
         label: "Alta PAC MFT",
@@ -168,29 +209,29 @@ export const translations: Record<Language, TrackerTranslations> = {
           "Realiza el handshake con TD SYNNEX para validar tu configuración de Microsoft.",
       },
       aws_partner_account: {
-        label: "AWS Partner Account",
+        label: "Alta en AWS Partner Central",
         instructions:
-          "Crea tu cuenta de AWS Partner. Visita el portal de AWS Partner Network y completa el registro.",
+          "Registra la empresa en AWS Partner Central desde la AWS Console. Se requiere una AWS Account y autoridad legal para aceptar términos.",
       },
       aws_partner_engagement: {
-        label: "AWS Partner Engagement",
+        label: "Enrólate en un Partner Path",
         instructions:
-          "Completa el proceso de engagement con AWS. Esto incluye la aceptación de términos y condiciones.",
+          "Selecciona el tipo de actividad como partner (Services o Software). Este paso habilita el acceso a programas y beneficios de AWS.",
       },
       aws_form: {
-        label: "AWS Form",
+        label: "Completa el AWS Form",
         instructions:
-          "Rellena el formulario de AWS con la información de tu empresa.",
+          "Formulario interno para configurar la relación entre el partner y TD SYNNEX como distribuidor.",
       },
       aws_dsa: {
-        label: "AWS DSA",
+        label: "Firma el DSA",
         instructions:
-          "Firma el Acuerdo de Distribución de Software (DSA) de AWS.",
+          "El Distribution Seller Agreement habilita la reventa a través de TD SYNNEX como distribuidor mayorista autorizado de AWS.",
       },
       aws_marketplace: {
-        label: "AWS Marketplace",
+        label: "AWS Account linking / Marketplace",
         instructions:
-          "Completa el registro en AWS Marketplace para vender tus soluciones.",
+          "Vincula la cuenta de AWS Partner Central con la cuenta de vendedor de AWS Marketplace.",
       },
       gc_id: {
         label: "Google Cloud ID",
@@ -202,6 +243,19 @@ export const translations: Record<Language, TrackerTranslations> = {
         instructions:
           "Introduce el dominio asociado a tu cuenta de Google Cloud.",
       },
+      google_cloud_id_group: {
+        label: "Google Cloud ID",
+        instructions: "Configura tu identificación de Google Cloud",
+        gc_id_label: "Google Cloud ID (GC_ID)",
+        gc_id_placeholder: "Introduce tu Google Cloud ID",
+        domain_label: "Dominio de Google Cloud",
+        domain_placeholder: "ejemplo.com (sin http/https)",
+        save_button: "Guardar",
+        completed_alert: "Completado: Ambos campos están configurados correctamente.",
+        pending_alert: "Pendiente: Completa ambos campos para finalizar el subpaso.",
+        info_alert: "Introduce el identificador de Google Cloud (GC_ID) y el dominio principal de la organización. Con estos datos configuramos y validamos el onboarding.",
+        success_message: "Datos guardados correctamente",
+      },
       ion_tc_aceptados: {
         label: "ION T&C Aceptados",
         instructions:
@@ -212,11 +266,22 @@ export const translations: Record<Language, TrackerTranslations> = {
         instructions:
           "Solicita tu ingreso al programa. Un representante revisará tu solicitud en breve.",
       },
+      access_ion: {
+        label: "Acceso a ION",
+        instructions:
+          "Confirma que has recibido y probado tu acceso a la plataforma ION. Verifica que puedes iniciar sesión correctamente.",
+      },
+      onboarding_complete: {
+        label: "Onboarding Completo",
+        instructions:
+          "TD SYNNEX confirmará que tu onboarding está completo. Recibirás una notificación cuando todo esté finalizado.",
+      },
     },
     status: {
       completed: "Completado",
       pending: "Pendiente",
       notStarted: "No iniciado",
+      inProgress: "En proceso",
     },
     ui: {
       generalSteps: "Pasos Principales",
@@ -245,6 +310,7 @@ export const translations: Record<Language, TrackerTranslations> = {
       fieldUpdateError: "No se pudo actualizar el campo",
       loadingError: "Error al cargar los datos",
       retry: "Reintentar",
+      tdSynnexWillComplete: "TD SYNNEX marcará este paso como completado",
     },
   },
 
@@ -261,14 +327,24 @@ export const translations: Record<Language, TrackerTranslations> = {
     },
     substeps: {
       alta_hola_tdsynnex: {
-        label: "TDSynnex Welcome Registration",
+        label: "TD SYNNEX Registration Form",
         instructions:
           "Complete the initial registration on the TDSynnex platform. You will receive a welcome email with detailed instructions.",
       },
+      ecommerce_gk: {
+        label: "TD SYNNEX Account Confirmation",
+        instructions:
+          "Wait for your account confirmation. You will receive an email with access details or a request for additional information.",
+      },
       sepa_b2b_completado: {
-        label: "SEPA B2B Completed",
+        label: "Credit Line Request (SEPA B2B)",
         instructions:
           "Complete the SEPA B2B form to set up payments. Make sure you have the correct bank details.",
+      },
+      rmt_ct_completado: {
+        label: "Credit Conditions Confirmation",
+        instructions:
+          "The finance team will review your request and assign credit conditions. You will receive email confirmation.",
       },
       alta_pac_mft: {
         label: "PAC MFT Registration",
@@ -286,27 +362,29 @@ export const translations: Record<Language, TrackerTranslations> = {
           "Perform the handshake with TD SYNNEX to validate your Microsoft setup.",
       },
       aws_partner_account: {
-        label: "AWS Partner Account",
+        label: "AWS Partner Central Registration",
         instructions:
-          "Create your AWS Partner account. Visit the AWS Partner Network portal and complete the registration.",
+          "Register the company in AWS Partner Central from the AWS Console. An AWS Account is required along with legal authority to accept terms.",
       },
       aws_partner_engagement: {
-        label: "AWS Partner Engagement",
+        label: "Enroll in a Partner Path",
         instructions:
-          "Complete the AWS engagement process. This includes accepting terms and conditions.",
+          "Select the type of partner activity (Services or Software). This step enables access to AWS programs and benefits.",
       },
       aws_form: {
-        label: "AWS Form",
-        instructions: "Fill out the AWS form with your company information.",
+        label: "Complete AWS Form",
+        instructions:
+          "Internal form to configure the relationship between the partner and TD SYNNEX as a distributor.",
       },
       aws_dsa: {
-        label: "AWS DSA",
-        instructions: "Sign the AWS Software Distribution Agreement (DSA).",
+        label: "Sign the DSA",
+        instructions:
+          "The Distribution Seller Agreement enables resale through TD SYNNEX as an authorized AWS wholesale distributor.",
       },
       aws_marketplace: {
-        label: "AWS Marketplace",
+        label: "AWS Account Linking / Marketplace",
         instructions:
-          "Complete the AWS Marketplace registration to sell your solutions.",
+          "Link the AWS Partner Central account with the AWS Marketplace seller account.",
       },
       gc_id: {
         label: "Google Cloud ID",
@@ -318,6 +396,19 @@ export const translations: Record<Language, TrackerTranslations> = {
         instructions:
           "Enter the domain associated with your Google Cloud account.",
       },
+      google_cloud_id_group: {
+        label: "Google Cloud ID",
+        instructions: "Configure your Google Cloud identification",
+        gc_id_label: "Google Cloud ID (GC_ID)",
+        gc_id_placeholder: "Enter your Google Cloud ID",
+        domain_label: "Google Cloud Domain",
+        domain_placeholder: "example.com (without http/https)",
+        save_button: "Save",
+        completed_alert: "Completed: Both fields are correctly configured.",
+        pending_alert: "Pending: Complete both fields to finish this substep.",
+        info_alert: "Enter the Google Cloud identifier (GC_ID) and the organization's primary domain. This data is used to configure and validate the onboarding.",
+        success_message: "Data saved successfully",
+      },
       ion_tc_aceptados: {
         label: "ION T&C Accepted",
         instructions:
@@ -328,11 +419,22 @@ export const translations: Record<Language, TrackerTranslations> = {
         instructions:
           "Request your program enrollment. A representative will review your request shortly.",
       },
+      access_ion: {
+        label: "ION Access",
+        instructions:
+          "Confirm that you have received and tested your access to the ION platform. Verify that you can log in correctly.",
+      },
+      onboarding_complete: {
+        label: "Onboarding Complete",
+        instructions:
+          "TD SYNNEX will confirm that your onboarding is complete. You will receive a notification when everything is finalized.",
+      },
     },
     status: {
       completed: "Completed",
       pending: "Pending",
       notStarted: "Not Started",
+      inProgress: "In Progress",
     },
     ui: {
       generalSteps: "Main Steps",
@@ -361,6 +463,7 @@ export const translations: Record<Language, TrackerTranslations> = {
       fieldUpdateError: "Could not update field",
       loadingError: "Error loading data",
       retry: "Retry",
+      tdSynnexWillComplete: "TD SYNNEX will mark this step as completed",
     },
   },
 
@@ -377,14 +480,24 @@ export const translations: Record<Language, TrackerTranslations> = {
     },
     substeps: {
       alta_hola_tdsynnex: {
-        label: "Registro de Boas-Vindas TDSynnex",
+        label: "Formulário de registro TD SYNNEX",
         instructions:
           "Complete o registro inicial na plataforma TDSynnex. Você receberá um e-mail de boas-vindas com instruções detalhadas.",
       },
+      ecommerce_gk: {
+        label: "Confirmação da conta TD SYNNEX",
+        instructions:
+          "Aguarde a confirmação da sua conta. Você receberá um e-mail com detalhes de acesso ou solicitação de informações adicionais.",
+      },
       sepa_b2b_completado: {
-        label: "SEPA B2B Concluído",
+        label: "Solicitação de linha de crédito (SEPA B2B)",
         instructions:
           "Preencha o formulário SEPA B2B para configurar pagamentos. Certifique-se de ter os dados bancários corretos.",
+      },
+      rmt_ct_completado: {
+        label: "Confirmação de condições de crédito",
+        instructions:
+          "A equipe financeira revisará sua solicitação e atribuirá as condições de crédito. Você receberá uma confirmação por e-mail.",
       },
       alta_pac_mft: {
         label: "Registro PAC MFT",
@@ -436,6 +549,19 @@ export const translations: Record<Language, TrackerTranslations> = {
         instructions:
           "Digite o domínio associado à sua conta do Google Cloud.",
       },
+      google_cloud_id_group: {
+        label: "Google Cloud ID",
+        instructions: "Configure sua identificação do Google Cloud",
+        gc_id_label: "Google Cloud ID (GC_ID)",
+        gc_id_placeholder: "Digite seu Google Cloud ID",
+        domain_label: "Domínio do Google Cloud",
+        domain_placeholder: "exemplo.com (sem http/https)",
+        save_button: "Salvar",
+        completed_alert: "Concluído: Ambos os campos estão configurados corretamente.",
+        pending_alert: "Pendente: Complete ambos os campos para finalizar o subpasso.",
+        info_alert: "Digite o identificador do Google Cloud (GC_ID) e o domínio principal da organização. Esses dados são usados para configurar e validar o onboarding.",
+        success_message: "Dados salvos com sucesso",
+      },
       ion_tc_aceptados: {
         label: "ION T&C Aceitos",
         instructions:
@@ -446,11 +572,22 @@ export const translations: Record<Language, TrackerTranslations> = {
         instructions:
           "Solicite sua inscrição no programa. Um representante revisará sua solicitação em breve.",
       },
+      access_ion: {
+        label: "Acesso ao ION",
+        instructions:
+          "Confirme que recebeu e testou seu acesso à plataforma ION. Verifique se você pode fazer login corretamente.",
+      },
+      onboarding_complete: {
+        label: "Onboarding Completo",
+        instructions:
+          "A TD SYNNEX confirmará que seu onboarding está completo. Você receberá uma notificação quando tudo estiver finalizado.",
+      },
     },
     status: {
       completed: "Concluído",
       pending: "Pendente",
       notStarted: "Não Iniciado",
+      inProgress: "Em Progresso",
     },
     ui: {
       generalSteps: "Passos Principais",
@@ -479,6 +616,7 @@ export const translations: Record<Language, TrackerTranslations> = {
       fieldUpdateError: "Não foi possível atualizar o campo",
       loadingError: "Erro ao carregar dados",
       retry: "Tentar novamente",
+      tdSynnexWillComplete: "A TD SYNNEX marcará este passo como concluído",
     },
   },
 };

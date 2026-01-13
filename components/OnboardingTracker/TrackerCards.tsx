@@ -28,8 +28,11 @@ import {
   CustomerServiceOutlined,
   CheckOutlined,
   DeleteOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import type { TrackerTranslations } from "@/lib/i18n/trackerTranslations";
+import { getSubstepInstructionContent } from "./substepInstructions";
+import type { SubstepDefinition } from "@/lib/onboardingSteps";
 
 const { Text, Title } = Typography;
 
@@ -65,6 +68,7 @@ export interface SubstepUI {
   title: string;
   disabled: boolean;
   done: boolean;
+  completedAt?: string;
 }
 
 // ============================================================
@@ -87,6 +91,15 @@ interface CombinedTrackerCardProps {
   onSupport: () => void;
   canComplete: boolean;
   t: TrackerTranslations;
+  substepKey?: string; // New prop: the current substep key
+  manufacturer?: string; // Manufacturer context for instructions
+  completedAt?: string; // Completion date
+  clienteId?: string; // Cliente ID for backend operations
+  token?: string; // Token for backend operations
+  organizationName?: string; // Organization name for pre-filling forms
+  onFieldUpdated?: () => Promise<void>; // Callback to refresh onboarding detail
+  mirror?: Record<string, any>; // Mirror data for GROUP substeps
+  currentSubstep?: SubstepDefinition; // Current substep definition
 }
 
 export function CombinedTrackerCard({
@@ -105,6 +118,15 @@ export function CombinedTrackerCard({
   onSupport,
   canComplete,
   t,
+  substepKey,
+  manufacturer,
+  completedAt,
+  clienteId,
+  token,
+  organizationName,
+  onFieldUpdated,
+  mirror,
+  currentSubstep,
 }: CombinedTrackerCardProps) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteValue, setNoteValue] = useState("");
@@ -135,15 +157,12 @@ export function CombinedTrackerCard({
     <Card
       title={t.ui.generalSteps}
       style={{
-        height: "100%",
         display: "flex",
         flexDirection: "column",
         ...cardBaseStyle,
       }}
       styles={{
         body: {
-          flex: 1,
-          overflow: "auto",
           display: "flex",
           flexDirection: "column",
           paddingBottom: 12,
@@ -192,11 +211,9 @@ export function CombinedTrackerCard({
           display: "grid",
           gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.8fr)",
           gap: 16,
-          flex: 1,
-          minHeight: 0,
         }}
       >
-        <div style={{ overflow: "auto" }}>
+        <div>
           <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
             {t.ui.substeps}
           </Text>
@@ -208,17 +225,47 @@ export function CombinedTrackerCard({
               if (substeps[idx]?.disabled) return;
               onChangeSubstep(idx);
             }}
-            items={substeps.map((s, idx) => ({
-              title: s.title,
-              description: s.done ? "Completado" : undefined,
-              disabled: s.disabled,
-              status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
-            }))}
+            items={substeps.map((s, idx) => {
+              const isDone = s.done;
+              // A substep is in progress if:
+              // 1. It's not done yet
+              // 2. AND the previous substep is done (or it's the first substep)
+              const prevSubstepDone = idx === 0 || substeps[idx - 1]?.done;
+              const isInProgress = !isDone && !s.disabled && prevSubstepDone;
+
+              return {
+                title: (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span>{s.title}</span>
+                    {isDone && (
+                      <Tag
+                        icon={<CheckOutlined />}
+                        color="success"
+                        style={{ width: "fit-content", fontSize: 11 }}
+                      >
+                        {t.status.completed}
+                      </Tag>
+                    )}
+                    {isInProgress && (
+                      <Tag
+                        icon={<LoadingOutlined spin />}
+                        color="orange"
+                        style={{ width: "fit-content", fontSize: 11 }}
+                      >
+                        {t.status.inProgress}
+                      </Tag>
+                    )}
+                  </div>
+                ),
+                disabled: s.disabled,
+                status: s.done ? "finish" : idx === currentSubIndex ? "process" : "wait",
+              };
+            })}
             style={{ flex: "auto" }}
           />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
@@ -235,9 +282,18 @@ export function CombinedTrackerCard({
             </Tag>
           </div>
 
-          <div style={{ flex: 1, overflow: "auto" }}>
+          <div>
             {loading ? (
               <Skeleton active />
+            ) : substepKey ? (
+              getSubstepInstructionContent(substepKey, {
+                manufacturer,
+                clienteId,
+                token,
+                organizationName,
+                onFieldUpdated,
+                mirror,
+              })
             ) : (
               <Typography.Paragraph style={{ fontSize: 14, lineHeight: 1.6 }}>
                 {description}
@@ -287,7 +343,7 @@ export function CombinedTrackerCard({
               borderTop: "1px solid var(--tracker-card-border)",
             }}
           >
-            <Flex align="center" justify="flex-start" wrap="wrap" gap={8}>
+            <Flex align="center" justify="flex-end" wrap="wrap" gap={8}>
               <Space
                 split={
                   <span
@@ -316,16 +372,21 @@ export function CombinedTrackerCard({
                     onClick={onSupport}
                   />
                 </Tooltip>
-                <Tooltip title={t.ui.markComplete}>
-                  <Button
-                    type="text"
-                    icon={<CheckOutlined />}
-                    aria-label={t.ui.markComplete}
-                    onClick={onMarkComplete}
-                    disabled={!canComplete}
-                    style={{ color: canComplete ? "#1677ff" : undefined }}
-                  />
-                </Tooltip>
+                <Button
+                  type="text"
+                  icon={!canComplete ? <CheckCircleFilled /> : <CheckOutlined />}
+                  onClick={onMarkComplete}
+                  disabled={!canComplete || (currentSubstep?.completedBy === "TD_SYNNEX" && canComplete)}
+                  style={{
+                    color: !canComplete ? "#52c41a" : canComplete ? "#1677ff" : undefined,
+                  }}
+                >
+                  {!canComplete && completedAt
+                    ? `${t.ui.completedOn} ${new Date(completedAt).toLocaleDateString()}`
+                    : currentSubstep?.completedBy === "TD_SYNNEX" && canComplete
+                    ? t.ui.tdSynnexWillComplete
+                    : t.ui.markComplete}
+                </Button>
               </Space>
             </Flex>
           </div>
@@ -493,11 +554,11 @@ export function NotesCard({ notes, currentUserId, onCreate, onDelete, t }: Notes
           {t.ui.addNote}
         </Button>
       }
-      style={{ height: "100%", display: "flex", flexDirection: "column", ...cardBaseStyle }}
-      styles={{ ...cardHeaderStyles, body: { flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: "16px" } }}
+      style={{ display: "flex", flexDirection: "column", ...cardBaseStyle }}
+      styles={{ ...cardHeaderStyles, body: { display: "flex", flexDirection: "column", padding: "16px" } }}
     >
-      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <div style={{ flex: 1, overflow: "auto", paddingRight: 4, minHeight: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ paddingRight: 4 }}>
           {showEmptyState ? (
             <div
               style={{
@@ -623,26 +684,25 @@ export function OverallProgressCard({
 }: OverallProgressCardProps) {
   return (
     <Card
-      title={t.ui.overallProgress}
       style={{
-        height: "100%",
+        aspectRatio: "1",
         ...cardBaseStyle,
       }}
       styles={{
-        ...cardHeaderStyles,
         body: {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px",
+          height: "100%",
         },
       }}
     >
-      <Flex vertical align="center" justify="center" gap={16} style={{ width: "100%" }}>
+      <Flex vertical align="center" justify="center" gap={12} style={{ width: "100%", height: "100%" }}>
         <Progress
           type="circle"
           percent={percent}
-          size={100}
+          size={90}
           strokeWidth={8}
           strokeColor={{
             "0%": "var(--tracker-accent)",
@@ -653,7 +713,7 @@ export function OverallProgressCard({
             <div style={{ textAlign: "center" }}>
               <div
                 style={{
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: "bold",
                   color: "var(--tracker-accent-strong)",
                   lineHeight: 1
@@ -665,10 +725,10 @@ export function OverallProgressCard({
           )}
         />
         <div style={{ textAlign: "center" }}>
-          <Title level={5} style={{ margin: 0, marginBottom: 4, fontSize: 14 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 2, fontSize: 13 }}>
             {done} {t.ui.of} {total}
           </Title>
-          <Text type="secondary" style={{ fontSize: 11 }}>
+          <Text type="secondary" style={{ fontSize: 10 }}>
             {t.ui.substepsCompleted}
           </Text>
         </div>

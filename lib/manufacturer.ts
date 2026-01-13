@@ -2,8 +2,8 @@
  * Manufacturer normalization utilities
  *
  * The backend (Apps Script) can return various manufacturer strings including:
- * - Single values: "Microsoft", "AWS", "Google"
- * - Variants: "Microsoft CSP", "MS", "MFT", "Amazon", "Amazon Web Services", "Google Cloud"
+ * - Single values: "Microsoft", "AWS", "Google", "Google Cloud"
+ * - Variants: "Microsoft CSP", "MS", "MFT", "Amazon", "Amazon Web Services", "Google Cloud", "GCP"
  * - Lists: "Microsoft, AWS", "Google, Microsoft"
  *
  * This module normalizes these to canonical keys: "MICROSOFT" | "AWS" | "GOOGLE"
@@ -59,7 +59,8 @@ export function normalizeManufacturer(raw: unknown): ManufacturerKey {
     if (parts.some(p =>
       p.includes("google") ||
       p.includes("gcp") ||
-      p.includes("gc")
+      p.includes("gc") ||
+      p === "google cloud"
     )) {
       return "GOOGLE";
     }
@@ -93,7 +94,8 @@ export function normalizeManufacturer(raw: unknown): ManufacturerKey {
   if (
     lower.includes("google") ||
     lower === "gcp" ||
-    lower === "gc"
+    lower === "gc" ||
+    lower === "google cloud"
   ) {
     return "GOOGLE";
   }
@@ -114,7 +116,7 @@ export function getManufacturerDisplayName(key: ManufacturerKey): string {
   const displayNames: Record<ManufacturerKey, string> = {
     MICROSOFT: "Microsoft",
     AWS: "AWS",
-    GOOGLE: "Google",
+    GOOGLE: "Google Cloud",
   };
   return displayNames[key];
 }
@@ -133,7 +135,7 @@ export function isValidManufacturer(raw: unknown): boolean {
   const knownPatterns = [
     "microsoft", "ms", "mft", "csp",
     "aws", "amazon",
-    "google", "gcp", "gc"
+    "google", "gcp", "gc", "google cloud"
   ];
 
   return knownPatterns.some(pattern => rawStr.includes(pattern));

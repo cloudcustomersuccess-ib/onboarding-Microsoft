@@ -243,3 +243,48 @@ export async function deleteNote(
     token
   );
 }
+
+/**
+ * Forms: Submit AWS Registration Form
+ * This endpoint is PUBLIC (no token required in path, but uses secret in body)
+ */
+export async function submitAwsRegistration(
+  secret: string,
+  clienteId: string,
+  userEmail: string,
+  data: {
+    partnerLegalName: string;
+    legalRepName: string;
+    email: string;
+    partnerPathType: string;
+    partnerTier: string;
+    apnId: string;
+    solutionProvider: string;
+    awsCompetency: string;
+    reservedInstances: string;
+    dedicatedOrg: string;
+    customerDedicatedOrg: string;
+    supportPlan: string;
+  }
+): Promise<{ ok: boolean; submissionId?: string }> {
+  // Validate secret exists
+  if (!secret) {
+    throw new Error(
+      "AWS Registration Secret no configurado. Por favor configura NEXT_PUBLIC_AWS_REGISTRATION_SECRET en .env.local"
+    );
+  }
+
+  // Use existing apiRequest helper (matches project pattern)
+  // apiRequest sends body as JSON automatically
+  return apiRequest<{ ok: boolean; submissionId?: string }>(
+    "/forms/aws-registration/save",
+    "POST",
+    undefined, // no token required for this public endpoint
+    {
+      secret,
+      id: clienteId,
+      userEmail,
+      data,
+    }
+  );
+}
