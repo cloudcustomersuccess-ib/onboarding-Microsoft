@@ -167,6 +167,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const { defaultAlgorithm, darkAlgorithm } = theme;
+  const controlBg = isDarkMode ? "rgba(255, 255, 255, 0.08)" : "#f1f3f5";
+  const controlBgActive = isDarkMode ? "rgba(255, 255, 255, 0.16)" : "#ffffff";
+  const controlOutline = isDarkMode
+    ? "0 0 0 2px rgba(0, 86, 87, 0.35)"
+    : "0 0 0 2px rgba(0, 86, 87, 0.2)";
+  const outlineColor = isDarkMode
+    ? "rgba(0, 86, 87, 0.35)"
+    : "rgba(0, 86, 87, 0.2)";
+  const optionSelectedBg = isDarkMode
+    ? "rgba(0, 86, 87, 0.25)"
+    : "rgba(0, 86, 87, 0.12)";
+  const optionActiveBg = isDarkMode
+    ? "rgba(0, 86, 87, 0.2)"
+    : "rgba(0, 86, 87, 0.08)";
 
   return (
     <ConfigProvider
@@ -174,9 +188,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         algorithm: isDarkMode ? darkAlgorithm : defaultAlgorithm,
         token: {
           colorPrimary: "#005657",
+          colorInfo: "#1677ff",
           colorLink: "#005657",
           colorLinkHover: "#003031",
-          borderRadius: 8,
+          borderRadius: 10,
+          fontFamily:
+            "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+          fontSize: 15,
+          controlHeight: 36,
+          controlHeightLG: 44,
+          controlHeightSM: 28,
         },
         components: {
           Menu: {
@@ -185,8 +206,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             itemHoverBg: isDarkMode ? "rgba(0, 86, 87, 0.15)" : "rgba(0, 86, 87, 0.05)",
           },
           Layout: {
-            siderBg: isDarkMode ? "#141414" : "#ffffff",
-            headerBg: isDarkMode ? "#141414" : "#ffffff",
+            siderBg: isDarkMode ? "#141414" : "#f7f8fa",
+            headerBg: isDarkMode ? "#141414" : "#f7f8fa",
+          },
+          Input: {
+            paddingInline: 12,
+            paddingInlineLG: 14,
+            paddingBlock: 6,
+            paddingBlockLG: 8,
+            hoverBorderColor: "#005657",
+            activeBorderColor: "#005657",
+            activeShadow: controlOutline,
+            hoverBg: controlBg,
+            activeBg: controlBgActive,
+            inputFontSize: 15,
+            inputFontSizeLG: 15,
+          },
+          Select: {
+            selectorBg: controlBg,
+            hoverBorderColor: "#005657",
+            activeBorderColor: "#005657",
+            activeOutlineColor: outlineColor,
+            optionSelectedBg,
+            optionActiveBg,
+            optionSelectedColor: isDarkMode ? "rgba(255, 255, 255, 0.9)" : "#003031",
+          },
+          Form: {
+            itemMarginBottom: 16,
+            labelColor: isDarkMode ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.85)",
+            labelFontSize: 13,
           },
         },
       }}
@@ -215,7 +263,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               justifyContent: "center",
               padding: collapsed ? "16px 8px" : "16px 24px",
-              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #f0f0f0",
+              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #e1e6ea",
             }}
           >
             {!collapsed ? (
@@ -277,7 +325,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               left: collapsed ? 80 : 250,
               zIndex: 999,
               height: "64px",
-              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #f0f0f0",
+              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #e1e6ea",
               transition: "left 0.2s",
             }}
           >

@@ -1,0 +1,98 @@
+.mainSteps {
+  margin-top: 4px;
+}
+
+.mainSteps :global(.ant-steps-item) {
+  padding-inline-end: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mainSteps :global(.ant-steps-item:hover:not(.ant-steps-item-disabled)) {
+  transform: translateY(-2px);
+}
+
+.mainSteps :global(.ant-steps-item-icon) {
+  width: 42px;
+  height: 42px;
+  line-height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--tracker-card-border);
+  background: linear-gradient(135deg, var(--tracker-card-bg) 0%, rgba(255, 255, 255, 0.8) 100%);
+  box-shadow: 0 8px 20px rgba(24, 39, 75, 0.1), 0 2px 6px rgba(24, 39, 75, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mainSteps :global(.ant-steps-item-icon .ant-steps-icon) {
+  font-size: 16px;
+  color: var(--tracker-text-primary);
+  font-weight: 700;
+}
+
+.mainSteps :global(.ant-steps-item-process .ant-steps-item-icon) {
+  border-color: var(--tracker-accent);
+  background: linear-gradient(135deg, rgba(var(--tracker-accent-rgb), 0.1) 0%, rgba(var(--tracker-accent-rgb), 0.05) 100%);
+  box-shadow: 0 0 0 5px rgba(var(--tracker-accent-rgb), 0.12), 0 8px 20px rgba(var(--tracker-accent-rgb), 0.15);
+  transform: scale(1.05);
+}
+
+.mainSteps :global(.ant-steps-item-process .ant-steps-icon) {
+  color: var(--tracker-accent);
+}
+
+.mainSteps :global(.ant-steps-item-finish .ant-steps-item-icon) {
+  background: linear-gradient(135deg, var(--tracker-accent) 0%, var(--tracker-accent-strong) 100%);
+  border-color: var(--tracker-accent);
+  box-shadow: 0 10px 24px rgba(var(--tracker-accent-rgb), 0.25), 0 4px 10px rgba(var(--tracker-accent-rgb), 0.15);
+}
+
+.mainSteps :global(.ant-steps-item-finish .ant-steps-icon) {
+  color: #ffffff;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.mainSteps :global(.ant-steps-item-title) {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tracker-text-primary);
+  line-height: 1.4;
+}
+
+.mainSteps :global(.ant-steps-item-description) {
+  margin-top: 6px;
+}
+
+.mainSteps :global(.ant-steps-item-tail::after) {
+  background: linear-gradient(to right, var(--tracker-card-border) 0%, rgba(var(--tracker-accent-rgb), 0.2) 100%);
+  height: 2px;
+}
+
+.substepSteps :global(.ant-steps-item) {
+  padding-bottom: 10px;
+}
+
+.substepSteps :global(.ant-steps-item-tail::after) {
+  background-color: var(--tracker-card-border);
+}
+
+.substepSteps :global(.ant-steps-item-wait .ant-steps-item-tail::after),
+.substepSteps :global(.ant-steps-item-process .ant-steps-item-tail::after) {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--tracker-card-border),
+    var(--tracker-card-border) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+  background-color: transparent;
+}
+
+.substepSteps :global(.ant-steps-item-finish .ant-steps-item-tail::after) {
+  background-color: var(--tracker-accent);
+}
+
+.substepTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tracker-text-primary);
+}

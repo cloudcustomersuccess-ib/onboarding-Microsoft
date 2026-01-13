@@ -1,0 +1,43 @@
+.instructionSteps {
+  width: 100%;
+}
+
+.instructionSteps :global(.ant-steps-item) {
+  padding-bottom: 10px;
+}
+
+.instructionSteps :global(.ant-steps-item-icon) {
+  width: 22px;
+  height: 22px;
+  line-height: 20px;
+  margin-top: 0;
+  border: 1px solid var(--tracker-step-border);
+  background: var(--tracker-step-bg);
+}
+
+.instructionSteps :global(.ant-steps-item-icon .ant-steps-icon) {
+  font-size: 12px;
+  color: var(--tracker-text-primary);
+  font-weight: 600;
+}
+
+.instructionSteps :global(.ant-steps-item-content) {
+  min-height: 0;
+}
+
+.instructionSteps :global(.ant-steps-item-tail::after) {
+  background-color: var(--tracker-card-border);
+}
+
+.stepTitle {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.stepDescription {
+  display: block;
+  font-size: 15px;
+  line-height: 1.4;
+}

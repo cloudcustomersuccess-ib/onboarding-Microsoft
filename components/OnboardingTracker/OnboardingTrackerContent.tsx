@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Row, Col, Alert, Button, Spin, message } from "antd";
+import { Row, Col, Button, Spin, message } from "antd";
 import { useRouter } from "next/navigation";
 import { getOnboardingDetail, updateField, addNote, deleteNote } from "@/lib/api";
 import { getToken, getUser } from "@/lib/session";
@@ -26,6 +26,7 @@ import {
   type NoteUI,
 } from "./TrackerCards";
 import { UserInfoCard } from "@/components/UserInfoCard/UserInfoCard";
+import { CompactAlert } from "./CompactAlert";
 
 interface OnboardingTrackerContentProps {
   clienteId: string;
@@ -339,7 +340,7 @@ export default function OnboardingTrackerContent({
 
   if (error) {
     return (
-      <Alert
+      <CompactAlert
         message={t.ui.loadingError}
         description={error}
         type="error"
@@ -355,7 +356,7 @@ export default function OnboardingTrackerContent({
 
   if (!onboarding) {
     return (
-      <Alert
+      <CompactAlert
         message="Not Found"
         description="Onboarding not found"
         type="warning"
@@ -367,7 +368,7 @@ export default function OnboardingTrackerContent({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {showManufacturerWarning && (
-        <Alert
+        <CompactAlert
           message="Manufacturer desconocido"
           description={`El fabricante "${onboarding?.Manufacturer}" no es reconocido. Se está usando Microsoft por defecto.`}
           type="warning"
@@ -413,6 +414,8 @@ export default function OnboardingTrackerContent({
               onFieldUpdated={fetchDetail}
               mirror={mirror || undefined}
               currentSubstep={currentSubstep}
+              notes={notes}
+              onboarding={onboarding || undefined}
             />
           )}
         </Col>

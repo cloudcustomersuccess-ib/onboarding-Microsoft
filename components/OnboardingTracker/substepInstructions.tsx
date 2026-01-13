@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Typography, Alert, List, Space, Tag, Divider, Steps, Form, Input, Select, Switch, Button, Collapse, message } from "antd";
+import { Typography, List, Space, Tag, Divider, Form, Input, Select, Switch, Button, Collapse, message } from "antd";
 import {
   FileTextOutlined,
   MailOutlined,
@@ -8,12 +8,18 @@ import {
   WarningOutlined,
   CloudOutlined,
   LinkOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { updateField, addNote, submitAwsRegistration } from "@/lib/api";
 import { normalizeManufacturer, type ManufacturerKey } from "@/lib/manufacturer";
 import { useTrackerTranslations, type Language } from "@/lib/i18n/trackerTranslations";
+import { EmailPushNotification } from "@/components/EmailPushNotification";
+import type { Note } from "@/types";
+import { CompactAlert } from "./CompactAlert";
+import { InstructionSteps } from "./InstructionSteps";
+import formStyles from "./TrackerForms.module.css";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text, Paragraph, Link } = Typography;
 const { Panel } = Collapse;
 
 type Manufacturer = "MICROSOFT" | "AWS" | "GOOGLE";
@@ -25,6 +31,8 @@ interface InstructionContext {
   token?: string;
   onFieldUpdated?: () => Promise<void>;
   mirror?: Record<string, any>;
+  notes?: Note[];
+  onboarding?: any;
 }
 
 /**
@@ -35,6 +43,56 @@ function isManufacturer(context: InstructionContext | undefined, expected: Manuf
   if (!context?.manufacturer) return false;
   const normalized = normalizeManufacturer(context.manufacturer);
   return normalized === expected;
+}
+
+/**
+ * Helper para obtener el label del programa según manufacturer
+ * Para AWS, intenta parsear el Partner Path desde una nota INTERNAL del substep "AWS Form"
+ */
+function getProgramLabel(context?: InstructionContext): string {
+  if (!context?.manufacturer) return "";
+
+  const normalized = normalizeManufacturer(context.manufacturer);
+
+  if (normalized === "MICROSOFT") {
+    return "Microsoft CSP";
+  }
+
+  if (normalized === "GOOGLE") {
+    return "Google Workspace Reseller Program y GCP Reseller Program";
+  }
+
+  if (normalized === "AWS") {
+    // Intentar deducir el Partner Path desde las notas
+    if (context.notes && context.notes.length > 0) {
+      // Buscar una nota INTERNAL del substep "AWS Form"
+      const awsFormNote = context.notes.find(
+        (note) =>
+          note.ScopeType === "SUBSTEP" &&
+          note.SubstepKey === "AWS Form" &&
+          note.Visibility === "INTERNAL"
+      );
+
+      if (awsFormNote?.Body) {
+        // Parsear el Partner Path desde el body de la nota
+        // Formato esperado: "**AWS Partner Path:** Services path" o "**AWS Partner Path:** Software path"
+        const match = awsFormNote.Body.match(/\*\*AWS Partner Path:\*\*\s*(Services path|Software path)/i);
+        if (match) {
+          const partnerPath = match[1].toLowerCase();
+          if (partnerPath.includes("services")) {
+            return "AWS Solutions Provider";
+          } else if (partnerPath.includes("software")) {
+            return "AWS Technology Partner Program";
+          }
+        }
+      }
+    }
+
+    // Si no se puede determinar, mostrar ambos como opción
+    return "AWS Solutions Provider / AWS Technology Partner Program (según tu Partner Path)";
+  }
+
+  return "";
 }
 
 // ============================================================
@@ -103,13 +161,13 @@ function GoogleCloudIDForm({ context }: { context?: InstructionContext }) {
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <div>
-        <Title level={5} style={{ marginBottom: 8 }}>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
           <CloudOutlined style={{ marginRight: 8 }} />
           {t.substeps.google_cloud_id_group.label}
         </Title>
       </div>
 
-      <Alert
+      <CompactAlert
         type="info"
         showIcon
         message={t.substeps.google_cloud_id_group.instructions}
@@ -118,7 +176,7 @@ function GoogleCloudIDForm({ context }: { context?: InstructionContext }) {
       />
 
       {isCompleted && (
-        <Alert
+        <CompactAlert
           type="success"
           showIcon
           icon={<CheckCircleOutlined />}
@@ -135,7 +193,7 @@ function GoogleCloudIDForm({ context }: { context?: InstructionContext }) {
       )}
 
       {!isCompleted && (
-        <Alert
+        <CompactAlert
           type="warning"
           showIcon
           icon={<WarningOutlined />}
@@ -144,7 +202,7 @@ function GoogleCloudIDForm({ context }: { context?: InstructionContext }) {
         />
       )}
 
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} className={formStyles.formSection}>
         <Form.Item
           label={t.substeps.google_cloud_id_group.gc_id_label}
           name="gcId"
@@ -205,7 +263,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Formulario de alta en TD SYNNEX
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -213,7 +271,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="Antes de iniciar"
@@ -229,7 +287,7 @@ export function getSubstepInstructionContent(
               href="https://www.holatdsynnex.com/alta_cliente_td_synnex.html"
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: 14 }}
+              style={{ fontSize: 15 }}
             >
               Acceder al formulario de alta →
             </a>
@@ -275,7 +333,7 @@ export function getSubstepInstructionContent(
             />
           </div>
 
-          <Alert
+          <CompactAlert
             type="warning"
             showIcon
             icon={<SafetyOutlined />}
@@ -292,7 +350,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Confirmación de la cuenta en TD SYNNEX
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -333,7 +391,7 @@ export function getSubstepInstructionContent(
             />
           </div>
 
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="Revisa tu bandeja de spam"
@@ -349,12 +407,12 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Solicitud de línea de crédito (SEPA B2B)
             </Title>
           </div>
 
-          <Alert
+          <CompactAlert
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -367,54 +425,33 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <List
-              size="small"
-              bordered
-              dataSource={[
+            <InstructionSteps
+              items={[
                 {
-                  step: 1,
-                  text: "Accede al formulario SEPA B2B",
-                  link: "https://www.holatdsynnex.com/sepaB2B.html",
+                  title: "Accede al formulario SEPA B2B",
+                  description: (
+                    <a href="https://www.holatdsynnex.com/sepaB2B.html" target="_blank" rel="noreferrer">
+                      Ir al formulario →
+                    </a>
+                  ),
                 },
                 {
-                  step: 2,
-                  text: "Inicia sesión con tus credenciales del Área Clientes",
+                  title: "Inicia sesión con tus credenciales del Área Clientes",
                 },
                 {
-                  step: 3,
-                  text: "Completa el formulario con la información solicitada",
+                  title: "Completa el formulario con la información solicitada",
                 },
                 {
-                  step: 4,
-                  text: 'Recibe por email el PDF "Mandato SEPA B2B"',
+                  title: 'Recibe por email el PDF "Mandato SEPA B2B"',
                 },
                 {
-                  step: 5,
-                  text: "Firma el PDF y adjúntalo en el formulario junto al certificado de titularidad de la cuenta bancaria indicada",
+                  title: "Firma el PDF y adjúntalo en el formulario junto al certificado de titularidad de la cuenta bancaria indicada",
                 },
               ]}
-              renderItem={(item) => (
-                <List.Item>
-                  <Space>
-                    <Tag color="blue">{item.step}</Tag>
-                    <Text>
-                      {item.text}
-                      {item.link && (
-                        <>
-                          {": "}
-                          <a href={item.link} target="_blank" rel="noreferrer">
-                            Ir al formulario →
-                          </a>
-                        </>
-                      )}
-                    </Text>
-                  </Space>
-                </List.Item>
-              )}
             />
           </div>
 
-          <Alert
+          <CompactAlert
             type="error"
             showIcon
             message="Importante: Firma del mandato SEPA B2B"
@@ -430,7 +467,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Confirmación de condiciones de crédito
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -439,7 +476,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="Documentación adicional"
@@ -467,7 +504,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               <CloudOutlined style={{ marginRight: 8 }} />
               Alta en Microsoft AI Cloud Partner Program
             </Title>
@@ -477,7 +514,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="Creación del Partner Center"
@@ -494,7 +531,7 @@ export function getSubstepInstructionContent(
               href="https://partner.microsoft.com/en-us/dashboard/account/v3/enrollment/introduction/partnership"
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: 14 }}
+              style={{ fontSize: 15 }}
             >
               Acceder al registro de Partnership →
             </a>
@@ -506,10 +543,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Acceder al enlace de registro",
@@ -537,7 +571,7 @@ export function getSubstepInstructionContent(
             />
           </div>
 
-          <Alert
+          <CompactAlert
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -554,7 +588,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               <CloudOutlined style={{ marginRight: 8 }} />
               Alta en Cloud Solutions Provider (CSP)
             </Title>
@@ -564,7 +598,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="Requisito previo"
@@ -581,7 +615,7 @@ export function getSubstepInstructionContent(
               href="https://partner.microsoft.com/en-us/dashboard/account/v3/enrollment/introduction/partnership"
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: 14 }}
+              style={{ fontSize: 15 }}
             >
               Acceder al registro de Partnership →
             </a>
@@ -593,10 +627,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Acceder al enlace de registro",
@@ -623,7 +654,7 @@ export function getSubstepInstructionContent(
             />
           </div>
 
-          <Alert
+          <CompactAlert
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -640,7 +671,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               <SafetyOutlined style={{ marginRight: 8 }} />
               Indirect Reseller Relationship
             </Title>
@@ -650,7 +681,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="Paso imprescindible"
@@ -667,7 +698,7 @@ export function getSubstepInstructionContent(
               href="https://admin.microsoft.com/Adminportal/Home?invType=IndirectResellerRelationship&partnerId=df2ef418-7c5b-4ca0-a7c1-8f230e4019da&msppId=6531449&indirectCSPId=75af751c-f582-45e7-aee2-0fd6c8203c1d#/partners/invitation"
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: 14 }}
+              style={{ fontSize: 15 }}
             >
               Abrir enlace de invitación de TD SYNNEX →
             </a>
@@ -679,10 +710,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Abrir el enlace de invitación",
@@ -708,7 +736,7 @@ export function getSubstepInstructionContent(
             />
           </div>
 
-          <Alert
+          <CompactAlert
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -724,7 +752,7 @@ export function getSubstepInstructionContent(
     case "AWS Partner Account":
       if (!isManufacturer(context, "AWS")) {
         return (
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="No aplica"
@@ -735,7 +763,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Alta en AWS Partner Central
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -743,14 +771,14 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="success"
             showIcon
             message="Si ya dispones de AWS Partner Central"
             description="Si la organización ya dispone de AWS Partner Central, no crees uno nuevo. Marca este paso como completado y confirma en el siguiente paso si ya estás enrolado en un Partner Path."
           />
 
-          <Alert
+          <CompactAlert
             type="error"
             showIcon
             message="Requisito previo"
@@ -762,10 +790,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Seleccionar la AWS Account",
@@ -803,7 +828,7 @@ export function getSubstepInstructionContent(
     case "AWS_Partner_Engagement":
       if (!isManufacturer(context, "AWS")) {
         return (
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="No aplica"
@@ -814,7 +839,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Enrólate en un AWS Partner Path
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -822,7 +847,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="success"
             showIcon
             message="Si ya estás registrado"
@@ -853,10 +878,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Iniciar sesión en AWS Partner Central",
@@ -897,7 +919,7 @@ export function getSubstepInstructionContent(
     case "AWS Form":
       if (!isManufacturer(context, "AWS")) {
         return (
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="No aplica"
@@ -913,7 +935,7 @@ export function getSubstepInstructionContent(
     case "AWS_DSA":
       if (!isManufacturer(context, "AWS")) {
         return (
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="No aplica"
@@ -924,7 +946,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               Firma el DSA (Distribution Seller Agreement)
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -932,14 +954,14 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="success"
             showIcon
             message="Si ya dispones de DSA firmado"
             description="Si la organización ya dispone de un Distribution Seller Agreement firmado con TD SYNNEX en cualquier país de la región EEA, marca este paso como completado."
           />
 
-          <Alert
+          <CompactAlert
             type="error"
             showIcon
             message="Firma requerida del Representante Legal"
@@ -951,10 +973,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Acceder a AWS Partner Central",
@@ -1003,7 +1022,7 @@ export function getSubstepInstructionContent(
     case "AWS_Marketplace":
       if (!isManufacturer(context, "AWS")) {
         return (
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="No aplica"
@@ -1014,7 +1033,7 @@ export function getSubstepInstructionContent(
       return (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <Title level={5} style={{ marginBottom: 8 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
               AWS Account linking (Partner Central ↔ AWS Marketplace)
             </Title>
             <Paragraph style={{ marginBottom: 16 }}>
@@ -1022,7 +1041,7 @@ export function getSubstepInstructionContent(
             </Paragraph>
           </div>
 
-          <Alert
+          <CompactAlert
             type="error"
             showIcon
             message="Requisito: rol Alliance Lead o Cloud Admin"
@@ -1034,10 +1053,7 @@ export function getSubstepInstructionContent(
             <Text strong style={{ display: "block", marginBottom: 12 }}>
               Pasos a seguir:
             </Text>
-            <Steps
-              direction="vertical"
-              size="small"
-              current={-1}
+            <InstructionSteps
               items={[
                 {
                   title: "Iniciar sesión como Alliance Lead o Cloud Administrator",
@@ -1075,7 +1091,7 @@ export function getSubstepInstructionContent(
     case "GOOGLE_CLOUD_ID":
       if (!isManufacturer(context, "GOOGLE")) {
         return (
-          <Alert
+          <CompactAlert
             type="info"
             showIcon
             message="No aplica"
@@ -1086,11 +1102,225 @@ export function getSubstepInstructionContent(
       return <GoogleCloudIDForm context={context} />;
 
     // ============================================================
+    // PASO 3 — Subpaso 3.1: Términos y condiciones de StreamOne® ION
+    // ============================================================
+    case "ION_T&C_aceptados":
+      return (
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <div>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+              Términos y condiciones de StreamOne® ION
+            </Title>
+          </div>
+
+          <EmailPushNotification
+            initials="TS"
+            from="no-reply@bryter.io"
+            subject="TD SYNNEX - Streamone Ion Platform Agreement Terms - Please Acknowledge"
+            timestampLabel="ahora"
+          />
+
+          <Paragraph style={{ marginTop: 8 }}>
+            Desde TD SYNNEX hemos enviado los términos y condiciones de StreamOne® ION al correo
+            electrónico indicado para el proceso.
+          </Paragraph>
+
+          <CompactAlert
+            type="info"
+            showIcon
+            message="Localiza el email"
+            description="Localiza un email de no-reply@bryter.io con el asunto: TD SYNNEX - Streamone Ion Platform Agreement Terms - Please Acknowledge."
+            style={{ marginBottom: 12 }}
+          />
+
+          <div>
+            <Text strong style={{ display: "block", marginBottom: 12 }}>
+              Pasos a seguir:
+            </Text>
+            <InstructionSteps
+              items={[
+                { title: "Localiza el email indicado en el buzón." },
+                { title: "Abre el enlace https://techdata-legal.bryter...." },
+                { title: "Revisa la información de la organización (panel izquierdo)." },
+                { title: "Revisa el contrato de StreamOne® ION (panel derecho)." },
+                { title: 'Selecciona "Acknowledge" y pulsa "Next" para confirmar los términos.' },
+              ]}
+            />
+          </div>
+
+          <Divider style={{ margin: "12px 0" }} />
+
+          <div>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+              Si aún no has recibido el contrato de StreamOne® ION...
+            </Title>
+            <Space direction="vertical" size="small" style={{ width: "100%" }}>
+              <Space>
+                <UserOutlined style={{ color: "#1677ff" }} />
+                <Text>Contacta con tu Customer Success Manager</Text>
+              </Space>
+              <Space>
+                <MailOutlined style={{ color: "#1677ff" }} />
+                <Link href="mailto:customersuccess.es@tdsynnex.com">
+                  customersuccess.es@tdsynnex.com
+                </Link>
+              </Space>
+            </Space>
+          </div>
+        </Space>
+      );
+
+    // ============================================================
+    // PASO 3 — Subpaso 3.2: Creación de la cuenta
+    // ============================================================
+    case "Welcome_Email_OPS":
+      return (
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <div>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+              Creación de la cuenta
+            </Title>
+          </div>
+
+          <EmailPushNotification
+            initials="CB"
+            from="businessexperiencesu@techdata.com"
+            subject="StreamOne® ION Platform Credentials"
+            timestampLabel="ahora"
+          />
+
+          <Paragraph style={{ marginTop: 8 }}>
+            Desde TD SYNNEX crearemos el perfil de partner en StreamOne® ION y generaremos un único
+            usuario administrador asociado a la persona de contacto indicada en los términos y
+            condiciones del paso anterior.
+          </Paragraph>
+
+          <Paragraph>
+            Tras la creación del usuario, se recibirá un email de Cloud Business Support
+            (businessexperiencesu@techdata.com) con las instrucciones para configurar la contraseña.
+          </Paragraph>
+
+          <CompactAlert
+            type="error"
+            showIcon
+            message="Importante"
+            description="Disponer de una cuenta en StreamOne® ION no autoriza a transaccionar en la plataforma. Para ello es necesario solicitar acceso al programa del fabricante en el siguiente paso."
+          />
+        </Space>
+      );
+
+    // ============================================================
+    // PASO 3 — Subpaso 3.3: Solicitud del programa @Manufacturer
+    // ============================================================
+    case "Program_Request":
+      const programLabel = getProgramLabel(context);
+      return (
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <div>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+              Solicitud del programa {programLabel}
+            </Title>
+            <Paragraph style={{ marginBottom: 16 }}>
+              En este paso se solicita el acceso al programa del fabricante para habilitar la
+              transacción en StreamOne® ION.
+            </Paragraph>
+          </div>
+
+          <div>
+            <Text strong style={{ display: "block", marginBottom: 12 }}>
+              Pasos a seguir:
+            </Text>
+            <InstructionSteps
+              items={[
+                {
+                  title: "Accede a StreamOne® ION",
+                  description: (
+                    <a href="https://ion.tdsynnex.com/" target="_blank" rel="noreferrer">
+                      Ir a StreamOne® ION →
+                    </a>
+                  ),
+                },
+                {
+                  title: 'Dirígete a "Partners" en el menú superior.',
+                },
+                {
+                  title: 'Selecciona "Programs" en el menú lateral izquierdo.',
+                },
+                {
+                  title: `Busca y selecciona el programa: ${programLabel}.`,
+                },
+                {
+                  title: 'Pulsa "Request".',
+                },
+              ]}
+            />
+          </div>
+
+          {isManufacturer(context, "MICROSOFT") && (
+            <CompactAlert
+              type="error"
+              showIcon
+              message="Importante para Microsoft CSP"
+              description="Al solicitar el programa de Microsoft CSP, introduce el Partner Location Account (antes MPN ID). Se encuentra en Partner Center > Account Settings > Identifiers > CSP. Un PLA incorrecto provoca errores en pedidos desde StreamOne® ION."
+            />
+          )}
+
+          {isManufacturer(context, "GOOGLE") && (
+            <CompactAlert
+              type="error"
+              showIcon
+              message="Importante para Google"
+              description="Aunque el workload sea únicamente Google Cloud Platform, es necesario solicitar también Google Workspace Reseller Program además de GCP Reseller Program para poder transaccionar en StreamOne® ION."
+            />
+          )}
+
+          {isManufacturer(context, "AWS") && (
+            <CompactAlert
+              type="info"
+              showIcon
+              message="Nota para AWS"
+              description="El programa a solicitar depende del Partner Path seleccionado (Services Path → AWS Solutions Provider / Software Path → AWS Technology Partner Program). Asegúrate de seleccionar el programa adecuado."
+            />
+          )}
+        </Space>
+      );
+
+    // ============================================================
+    // PASO 3 — Subpaso 3.4: Autorización del programa
+    // ============================================================
+    case "PB_applied":
+      return (
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <div>
+            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+              Autorización del programa
+            </Title>
+            <Paragraph style={{ marginBottom: 16 }}>
+              TD SYNNEX está revisando la solicitud del programa. Si la configuración en el
+              fabricante es correcta, el programa quedará autorizado en las próximas horas.
+            </Paragraph>
+          </div>
+
+          <Paragraph>
+            El Customer Success Manager confirmará la autorización del programa. Con esta
+            confirmación, el proceso de alta en StreamOne® ION quedará completado.
+          </Paragraph>
+
+          <CompactAlert
+            type="info"
+            showIcon
+            message="Mientras el programa esté en revisión"
+            description="Mientras el programa esté en revisión, no se podrá transaccionar en StreamOne® ION."
+          />
+        </Space>
+      );
+
+    // ============================================================
     // DEFAULT: Subpaso no contemplado
     // ============================================================
     default:
       return (
-        <Alert
+        <CompactAlert
           type="info"
           showIcon
           message="Instrucciones no disponibles"
@@ -1238,7 +1468,7 @@ ${response.submissionId ? `\n- **Submission ID:** ${response.submissionId}` : ""
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <div>
-        <Title level={5} style={{ marginBottom: 8 }}>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
           Completa el AWS Form
         </Title>
         <Paragraph style={{ marginBottom: 16 }}>
@@ -1247,7 +1477,7 @@ ${response.submissionId ? `\n- **Submission ID:** ${response.submissionId}` : ""
       </div>
 
       {submissionSuccess && submissionId && (
-        <Alert
+        <CompactAlert
           type="success"
           showIcon
           icon={<CheckCircleOutlined />}
@@ -1267,6 +1497,7 @@ ${response.submissionId ? `\n- **Submission ID:** ${response.submissionId}` : ""
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
+        className={formStyles.formSection}
         initialValues={{
           organizationName: context?.organizationName || "",
           solutionProvider: true,

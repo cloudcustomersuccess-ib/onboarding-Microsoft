@@ -1,0 +1,45 @@
+.formSection :global(.ant-form-item) {
+  margin-bottom: 16px;
+}
+
+.formSection :global(.ant-form-item-label > label) {
+  font-weight: 600;
+  color: var(--tracker-text-primary);
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
+.formSection :global(.ant-form-item-explain) {
+  font-size: 12px;
+}
+
+.formSection :global(.ant-input:not(.ant-input-status-error):not(.ant-input-status-warning)),
+.formSection :global(.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-status-error):not(.ant-input-affix-wrapper-status-warning)),
+.formSection :global(.ant-select:not(.ant-select-status-error):not(.ant-select-status-warning) .ant-select-selector) {
+  background-color: var(--tracker-control-bg);
+  border-color: var(--tracker-control-border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.formSection :global(.ant-input:not(.ant-input-status-error):not(.ant-input-status-warning):hover),
+.formSection :global(.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-status-error):not(.ant-input-affix-wrapper-status-warning):hover),
+.formSection :global(.ant-select:not(.ant-select-status-error):not(.ant-select-status-warning):hover .ant-select-selector) {
+  border-color: var(--tracker-accent);
+  background-color: var(--tracker-control-bg-hover);
+}
+
+.formSection :global(.ant-input:not(.ant-input-status-error):not(.ant-input-status-warning):focus),
+.formSection :global(.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-status-error):not(.ant-input-affix-wrapper-status-warning).ant-input-affix-wrapper-focused),
+.formSection :global(.ant-select:not(.ant-select-status-error):not(.ant-select-status-warning).ant-select-focused .ant-select-selector) {
+  border-color: var(--tracker-accent);
+  box-shadow: 0 0 0 2px rgba(var(--tracker-accent-rgb), 0.2);
+  background-color: var(--tracker-control-bg-active);
+}
+
+.formSection :global(.ant-switch-checked) {
+  background: var(--tracker-accent);
+}
+
+.formSection :global(.ant-switch-checked:hover) {
+  background: var(--tracker-accent-strong);
+}

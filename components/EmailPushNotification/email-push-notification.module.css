@@ -1,0 +1,52 @@
+.wrap {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.95);
+  box-shadow: rgba(0,0,0,0.08) 0px 10px 22px -14px;
+}
+
+:global([data-theme="dark"]) .wrap {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  box-shadow: rgba(0,0,0,0.35) 0px 10px 22px -14px;
+}
+
+.left {
+  flex: 0 0 auto;
+}
+
+.avatar {
+  font-weight: 700;
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subject {
+  max-width: 100%;
+}
+
+.time {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.from {
+  font-size: 12px;
+}

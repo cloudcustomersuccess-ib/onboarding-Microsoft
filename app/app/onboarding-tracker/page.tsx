@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Table, Typography, Alert, Button, Tag } from "antd";
+import { Card, Table, Typography, Button, Tag } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { listOnboardings } from "@/lib/api";
 import { getToken } from "@/lib/session";
 import type { Onboarding } from "@/types";
+import { CompactAlert } from "@/components/OnboardingTracker/CompactAlert";
 
 const { Title } = Typography;
 
@@ -121,7 +122,7 @@ export default function OnboardingTrackerPage() {
         }
       >
         {error && (
-          <Alert
+          <CompactAlert
             message="Error"
             description={error}
             type="error"

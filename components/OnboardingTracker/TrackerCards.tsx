@@ -33,6 +33,7 @@ import {
 import type { TrackerTranslations } from "@/lib/i18n/trackerTranslations";
 import { getSubstepInstructionContent } from "./substepInstructions";
 import type { SubstepDefinition } from "@/lib/onboardingSteps";
+import styles from "./TrackerCards.module.css";
 
 const { Text, Title } = Typography;
 
@@ -100,6 +101,8 @@ interface CombinedTrackerCardProps {
   onFieldUpdated?: () => Promise<void>; // Callback to refresh onboarding detail
   mirror?: Record<string, any>; // Mirror data for GROUP substeps
   currentSubstep?: SubstepDefinition; // Current substep definition
+  notes?: any[]; // Notes for the onboarding
+  onboarding?: any; // Onboarding data
 }
 
 export function CombinedTrackerCard({
@@ -127,6 +130,8 @@ export function CombinedTrackerCard({
   onFieldUpdated,
   mirror,
   currentSubstep,
+  notes,
+  onboarding,
 }: CombinedTrackerCardProps) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteValue, setNoteValue] = useState("");
@@ -173,25 +178,29 @@ export function CombinedTrackerCard({
       <div style={{ padding: "4px 0" }}>
         <Steps
           current={currentStepIndex}
+          className={styles.mainSteps}
           style={{ width: "100%" }}
           onChange={(idx) => {
             const step = stepsUI[idx];
             if (step?.locked) return;
             onSelectStep(idx);
           }}
-          items={stepsUI.map((s) => ({
+          items={stepsUI.map((s, idx) => ({
             title: (
-              <Text strong style={{ fontSize: 14, display: "block", textAlign: "left" }}>
-                {s.title}
-              </Text>
-            ),
-            description: (
-              <Text
-                type={s.percent === 100 ? "success" : s.percent === 0 ? "secondary" : undefined}
-                style={{ fontSize: 12, display: "block", textAlign: "left" }}
-              >
-                {s.statusText}
-              </Text>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <Text strong style={{ display: "block", textAlign: "left", fontSize: 16 }}>
+                  {s.title}
+                </Text>
+                <Tag
+                  color={s.percent === 100 ? "success" : s.percent === 0 ? "default" : "orange"}
+                  style={{
+                    width: "fit-content",
+                    fontSize: 11,
+                  }}
+                >
+                  {s.statusText}
+                </Tag>
+              </div>
             ),
             percent: s.percent,
             disabled: !!s.locked,
@@ -221,6 +230,7 @@ export function CombinedTrackerCard({
             type="dot"
             current={currentSubIndex}
             direction="vertical"
+            className={styles.substepSteps}
             onChange={(idx) => {
               if (substeps[idx]?.disabled) return;
               onChangeSubstep(idx);
@@ -236,7 +246,7 @@ export function CombinedTrackerCard({
               return {
                 title: (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span>{s.title}</span>
+                    <span className={styles.substepTitle}>{s.title}</span>
                     {isDone && (
                       <Tag
                         icon={<CheckOutlined />}
@@ -293,9 +303,11 @@ export function CombinedTrackerCard({
                 organizationName,
                 onFieldUpdated,
                 mirror,
+                notes,
+                onboarding,
               })
             ) : (
-              <Typography.Paragraph style={{ fontSize: 14, lineHeight: 1.6 }}>
+              <Typography.Paragraph style={{ fontSize: 15, lineHeight: 1.6 }}>
                 {description}
               </Typography.Paragraph>
             )}

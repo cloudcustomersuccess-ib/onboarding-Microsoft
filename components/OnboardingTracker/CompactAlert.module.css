@@ -1,0 +1,29 @@
+.compactAlert {
+  padding: 6px 8px;
+}
+
+.compactAlert :global(.ant-alert-icon) {
+  font-size: 11px;
+  margin-inline-end: 6px;
+}
+
+.compactAlert :global(.ant-alert-with-description .ant-alert-icon) {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.compactAlert :global(.ant-alert-message) {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.compactAlert :global(.ant-alert-description) {
+  font-size: 15px;
+  line-height: 1.4;
+  margin-top: 0;
+}
+
+.compactAlert :global(.ant-alert-action) {
+  margin-inline-start: 8px;
+}
