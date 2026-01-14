@@ -96,6 +96,752 @@ function getProgramLabel(context?: InstructionContext): string {
 }
 
 // ============================================================
+// COMPONENTE: Subpaso 1.1 — Formulario de alta en TD SYNNEX
+// ============================================================
+function AltaHolaTDSynnexContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.alta_hola_tdsynnex.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.alta_hola_tdsynnex.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.alta_hola_tdsynnex.beforeStarting}
+        description={t.substeps.alta_hola_tdsynnex.beforeStartingDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          <FileTextOutlined /> {t.substeps.alta_hola_tdsynnex.actionRequired}
+        </Text>
+        <a
+          href="https://www.holatdsynnex.com/alta_cliente_td_synnex.html"
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 15 }}
+        >
+          {t.substeps.alta_hola_tdsynnex.accessForm}
+        </a>
+      </div>
+
+      <Divider style={{ margin: "8px 0" }} />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.alta_hola_tdsynnex.acceptedDocuments}
+        </Text>
+        <List
+          size="small"
+          dataSource={[
+            {
+              title: t.substeps.alta_hola_tdsynnex.doc1Title,
+              description: t.substeps.alta_hola_tdsynnex.doc1Desc,
+            },
+            {
+              title: t.substeps.alta_hola_tdsynnex.doc2Title,
+              description: t.substeps.alta_hola_tdsynnex.doc2Desc,
+            },
+            {
+              title: t.substeps.alta_hola_tdsynnex.doc3Title,
+              description: t.substeps.alta_hola_tdsynnex.doc3Desc,
+            },
+          ]}
+          renderItem={(item, idx) => (
+            <List.Item>
+              <List.Item.Meta
+                avatar={
+                  <Tag color="blue" style={{ marginTop: 4 }}>
+                    {idx + 1}
+                  </Tag>
+                }
+                title={<Text strong>{item.title}</Text>}
+                description={<Text type="secondary">{item.description}</Text>}
+              />
+            </List.Item>
+          )}
+        />
+      </div>
+
+      <CompactAlert
+        type="warning"
+        showIcon
+        icon={<SafetyOutlined />}
+        message={t.substeps.alta_hola_tdsynnex.internalReview}
+        description={t.substeps.alta_hola_tdsynnex.internalReviewDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 1.2 — Confirmación de la cuenta en TD SYNNEX
+// ============================================================
+function EcommerceGKContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.ecommerce_gk.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.ecommerce_gk.description}
+        </Paragraph>
+      </div>
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.ecommerce_gk.possibleScenarios}
+        </Text>
+        <List
+          size="small"
+          dataSource={[
+            {
+              icon: <MailOutlined style={{ color: "#1677ff" }} />,
+              title: t.substeps.ecommerce_gk.scenario1Title,
+              description: t.substeps.ecommerce_gk.scenario1Desc,
+            },
+            {
+              icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+              title: t.substeps.ecommerce_gk.scenario2Title,
+              description: t.substeps.ecommerce_gk.scenario2Desc,
+            },
+          ]}
+          renderItem={(item) => (
+            <List.Item>
+              <List.Item.Meta
+                avatar={item.icon}
+                title={<Text strong>{item.title}</Text>}
+                description={<Text type="secondary">{item.description}</Text>}
+              />
+            </List.Item>
+          )}
+        />
+      </div>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.ecommerce_gk.checkSpam}
+        description={t.substeps.ecommerce_gk.checkSpamDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 1.3 — Solicitud de línea de crédito (SEPA B2B)
+// ============================================================
+function SepaB2BContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.sepa_b2b_completado.title}
+        </Title>
+      </div>
+
+      <CompactAlert
+        type="warning"
+        showIcon
+        icon={<WarningOutlined />}
+        message={t.substeps.sepa_b2b_completado.prerequisite}
+        description={t.substeps.sepa_b2b_completado.prerequisiteDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.sepa_b2b_completado.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            {
+              title: t.substeps.sepa_b2b_completado.step1,
+              description: (
+                <a href="https://www.holatdsynnex.com/sepaB2B.html" target="_blank" rel="noreferrer">
+                  {t.substeps.sepa_b2b_completado.step1Link}
+                </a>
+              ),
+            },
+            { title: t.substeps.sepa_b2b_completado.step2 },
+            { title: t.substeps.sepa_b2b_completado.step3 },
+            { title: t.substeps.sepa_b2b_completado.step4 },
+            { title: t.substeps.sepa_b2b_completado.step5 },
+          ]}
+        />
+      </div>
+
+      <CompactAlert
+        type="error"
+        showIcon
+        message={t.substeps.sepa_b2b_completado.important}
+        description={t.substeps.sepa_b2b_completado.importantDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 1.4 — Confirmación de condiciones de crédito
+// ============================================================
+function RmtCtContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.rmt_ct_completado.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.rmt_ct_completado.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.rmt_ct_completado.additionalDocs}
+        description={t.substeps.rmt_ct_completado.additionalDocsDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          <CheckCircleOutlined style={{ color: "#52c41a", marginRight: 6 }} />
+          {t.substeps.rmt_ct_completado.finalConfirmation}
+        </Text>
+        <Paragraph>
+          {t.substeps.rmt_ct_completado.finalConfirmationDesc}
+        </Paragraph>
+      </div>
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.1 Microsoft — Alta Microsoft AI Cloud Partner Program
+// ============================================================
+function AltaMFCloudAIContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          <CloudOutlined style={{ marginRight: 8 }} />
+          {t.substeps.alta_mf_cloud_ai.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.alta_mf_cloud_ai.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.alta_mf_cloud_ai.partnerCenterInfo}
+        description={t.substeps.alta_mf_cloud_ai.partnerCenterInfoDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          <LinkOutlined style={{ marginRight: 6 }} />
+          {t.substeps.alta_mf_cloud_ai.actionRequired}
+        </Text>
+        <a
+          href="https://partner.microsoft.com/en-us/dashboard/account/v3/enrollment/introduction/partnership"
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 15 }}
+        >
+          {t.substeps.alta_mf_cloud_ai.accessLink}
+        </a>
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.alta_mf_cloud_ai.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            { title: t.substeps.alta_mf_cloud_ai.step1, description: t.substeps.alta_mf_cloud_ai.step1Desc },
+            { title: t.substeps.alta_mf_cloud_ai.step2, description: t.substeps.alta_mf_cloud_ai.step2Desc },
+            { title: t.substeps.alta_mf_cloud_ai.step3, description: t.substeps.alta_mf_cloud_ai.step3Desc },
+            { title: t.substeps.alta_mf_cloud_ai.step4, description: t.substeps.alta_mf_cloud_ai.step4Desc },
+            { title: t.substeps.alta_mf_cloud_ai.step5, description: t.substeps.alta_mf_cloud_ai.step5Desc },
+          ]}
+        />
+      </div>
+
+      <CompactAlert
+        type="warning"
+        showIcon
+        icon={<WarningOutlined />}
+        message={t.substeps.alta_mf_cloud_ai.professionalAccount}
+        description={t.substeps.alta_mf_cloud_ai.professionalAccountDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.2 Microsoft — Alta Cloud Solutions Provider (CSP)
+// ============================================================
+function AltaPACMFTContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          <CloudOutlined style={{ marginRight: 8 }} />
+          {t.substeps.alta_pac_mft.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.alta_pac_mft.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.alta_pac_mft.prerequisite}
+        description={t.substeps.alta_pac_mft.prerequisiteDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          <LinkOutlined style={{ marginRight: 6 }} />
+          {t.substeps.alta_pac_mft.actionRequired}
+        </Text>
+        <a
+          href="https://partner.microsoft.com/en-us/dashboard/account/v3/enrollment/introduction/partnership"
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 15 }}
+        >
+          {t.substeps.alta_pac_mft.accessLink}
+        </a>
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.alta_pac_mft.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            { title: t.substeps.alta_pac_mft.step1, description: t.substeps.alta_pac_mft.step1Desc },
+            { title: t.substeps.alta_pac_mft.step2, description: t.substeps.alta_pac_mft.step2Desc },
+            { title: t.substeps.alta_pac_mft.step3, description: t.substeps.alta_pac_mft.step3Desc },
+            { title: t.substeps.alta_pac_mft.step4, description: t.substeps.alta_pac_mft.step4Desc },
+            { title: t.substeps.alta_pac_mft.step5, description: t.substeps.alta_pac_mft.step5Desc },
+          ]}
+        />
+      </div>
+
+      <CompactAlert
+        type="warning"
+        showIcon
+        icon={<WarningOutlined />}
+        message={t.substeps.alta_pac_mft.languageNote}
+        description={t.substeps.alta_pac_mft.languageNoteDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.3 Microsoft — Indirect Reseller Relationship
+// ============================================================
+function TDHandshakeMFTContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          <SafetyOutlined style={{ marginRight: 8 }} />
+          {t.substeps.td_handshake_mft.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.td_handshake_mft.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.td_handshake_mft.essentialStep}
+        description={t.substeps.td_handshake_mft.essentialStepDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          <LinkOutlined style={{ marginRight: 6 }} />
+          {t.substeps.td_handshake_mft.actionRequired}
+        </Text>
+        <a
+          href="https://admin.microsoft.com/Adminportal/Home?invType=IndirectResellerRelationship&partnerId=df2ef418-7c5b-4ca0-a7c1-8f230e4019da&msppId=6531449&indirectCSPId=75af751c-f582-45e7-aee2-0fd6c8203c1d#/partners/invitation"
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 15 }}
+        >
+          {t.substeps.td_handshake_mft.acceptInvitation}
+        </a>
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.td_handshake_mft.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            { title: t.substeps.td_handshake_mft.step1, description: t.substeps.td_handshake_mft.step1Desc },
+            { title: t.substeps.td_handshake_mft.step2, description: t.substeps.td_handshake_mft.step2Desc },
+            { title: t.substeps.td_handshake_mft.step3, description: t.substeps.td_handshake_mft.step3Desc },
+            { title: t.substeps.td_handshake_mft.step4, description: t.substeps.td_handshake_mft.step4Desc },
+            { title: t.substeps.td_handshake_mft.step5, description: t.substeps.td_handshake_mft.step5Desc },
+          ]}
+        />
+      </div>
+
+      <CompactAlert
+        type="warning"
+        showIcon
+        icon={<WarningOutlined />}
+        message={t.substeps.td_handshake_mft.adminPermissions}
+        description={t.substeps.td_handshake_mft.adminPermissionsDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.1 AWS — Alta en AWS Partner Central
+// ============================================================
+function AWSPartnerAccountContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.aws_partner_account.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.aws_partner_account.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="success"
+        showIcon
+        message={t.substeps.aws_partner_account.alreadyHaveAccount}
+        description={t.substeps.aws_partner_account.alreadyHaveAccountDesc}
+      />
+
+      <CompactAlert
+        type="error"
+        showIcon
+        message={t.substeps.aws_partner_account.prerequisite}
+        description={t.substeps.aws_partner_account.prerequisiteDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.aws_partner_account.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            { title: t.substeps.aws_partner_account.step1, description: t.substeps.aws_partner_account.step1Desc },
+            { title: t.substeps.aws_partner_account.step2, description: t.substeps.aws_partner_account.step2Desc },
+            { title: t.substeps.aws_partner_account.step3, description: t.substeps.aws_partner_account.step3Desc },
+            { title: t.substeps.aws_partner_account.step4, description: t.substeps.aws_partner_account.step4Desc },
+            { title: t.substeps.aws_partner_account.step5, description: t.substeps.aws_partner_account.step5Desc },
+            { title: t.substeps.aws_partner_account.step6, description: t.substeps.aws_partner_account.step6Desc },
+          ]}
+        />
+      </div>
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.2 AWS — Enrólate en un Partner Path
+// ============================================================
+function AWSPartnerEngagementContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.aws_partner_engagement.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.aws_partner_engagement.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="success"
+        showIcon
+        message={t.substeps.aws_partner_engagement.alreadyRegistered}
+        description={t.substeps.aws_partner_engagement.alreadyRegisteredDesc}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.aws_partner_engagement.pathExplanation}
+        </Text>
+        <Collapse>
+          <Panel header={t.substeps.aws_partner_engagement.servicesPath} key="1">
+            <Text>{t.substeps.aws_partner_engagement.servicesPathDesc}</Text>
+          </Panel>
+          <Panel header={t.substeps.aws_partner_engagement.softwarePath} key="2">
+            <Text>{t.substeps.aws_partner_engagement.softwarePathDesc}</Text>
+          </Panel>
+        </Collapse>
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.aws_partner_engagement.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            {
+              title: t.substeps.aws_partner_engagement.step1,
+              description: (
+                <a href="https://partnercentral.awspartner.com/partnercentral2/s/login" target="_blank" rel="noreferrer">
+                  {t.substeps.aws_partner_engagement.step1Desc}
+                </a>
+              ),
+            },
+            { title: t.substeps.aws_partner_engagement.step2, description: t.substeps.aws_partner_engagement.step2Desc },
+            { title: t.substeps.aws_partner_engagement.step3, description: t.substeps.aws_partner_engagement.step3Desc },
+            { title: t.substeps.aws_partner_engagement.step4, description: t.substeps.aws_partner_engagement.step4Desc },
+          ]}
+        />
+      </div>
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.4 AWS — Firma el DSA
+// ============================================================
+function AWSDSAContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.aws_dsa.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.aws_dsa.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="success"
+        showIcon
+        message={t.substeps.aws_dsa.alreadyHaveDsa}
+        description={t.substeps.aws_dsa.alreadyHaveDsaDesc}
+      />
+
+      <CompactAlert
+        type="error"
+        showIcon
+        message={t.substeps.aws_dsa.signatureRequired}
+        description={t.substeps.aws_dsa.signatureRequiredDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.aws_dsa.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            {
+              title: t.substeps.aws_dsa.step1,
+              description: (
+                <a href="https://partnercentral.awspartner.com/partnercentral2/s/login" target="_blank" rel="noreferrer">
+                  {t.substeps.aws_dsa.step1Desc}
+                </a>
+              ),
+            },
+            { title: t.substeps.aws_dsa.step2, description: t.substeps.aws_dsa.step2Desc },
+            { title: t.substeps.aws_dsa.step3, description: t.substeps.aws_dsa.step3Desc },
+            { title: t.substeps.aws_dsa.step4, description: t.substeps.aws_dsa.step4Desc },
+            { title: t.substeps.aws_dsa.step5, description: t.substeps.aws_dsa.step5Desc },
+            { title: t.substeps.aws_dsa.step6, description: t.substeps.aws_dsa.step6Desc },
+          ]}
+        />
+      </div>
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Subpaso 2.5 AWS — AWS Account linking / Marketplace
+// ============================================================
+function AWSMarketplaceContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.aws_marketplace.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.aws_marketplace.description}
+        </Paragraph>
+      </div>
+
+      <CompactAlert
+        type="error"
+        showIcon
+        message={t.substeps.aws_marketplace.roleRequirement}
+        description={t.substeps.aws_marketplace.roleRequirementDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.aws_marketplace.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            { title: t.substeps.aws_marketplace.step1, description: t.substeps.aws_marketplace.step1Desc },
+            { title: t.substeps.aws_marketplace.step2, description: t.substeps.aws_marketplace.step2Desc },
+            { title: t.substeps.aws_marketplace.step3, description: t.substeps.aws_marketplace.step3Desc },
+            { title: t.substeps.aws_marketplace.step4, description: t.substeps.aws_marketplace.step4Desc },
+            { title: t.substeps.aws_marketplace.step5, description: t.substeps.aws_marketplace.step5Desc },
+            { title: t.substeps.aws_marketplace.step6, description: t.substeps.aws_marketplace.step6Desc },
+          ]}
+        />
+      </div>
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Alert para AWS cuando no aplica
+// ============================================================
+function AWSNotApplicableAlert() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <CompactAlert
+      type="info"
+      showIcon
+      message={t.substeps.aws_partner_account.notApplicable}
+      description={t.substeps.aws_partner_account.notApplicableDesc}
+    />
+  );
+}
+
+// ============================================================
+// COMPONENTE: Alert para Google cuando no aplica
+// ============================================================
+function GoogleNotApplicableAlert() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <CompactAlert
+      type="info"
+      showIcon
+      message={t.substeps.google_cloud_id_group.notApplicable}
+      description={t.substeps.google_cloud_id_group.notApplicableDesc}
+    />
+  );
+}
+
+// ============================================================
 // COMPONENTE AUXILIAR: Google Cloud ID Form (Substep GROUP)
 // ============================================================
 function GoogleCloudIDForm({ context }: { context?: InstructionContext }) {
@@ -245,6 +991,241 @@ function GoogleCloudIDForm({ context }: { context?: InstructionContext }) {
   );
 }
 
+// ============================================================
+// COMPONENTE: ION Terms Content (Subpaso 3.1)
+// ============================================================
+function IONTermsContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.ion_tc_aceptados.title}
+        </Title>
+      </div>
+
+      <EmailPushNotification
+        initials="TS"
+        from="no-reply@bryter.io"
+        subject="TD SYNNEX - Streamone Ion Platform Agreement Terms - Please Acknowledge"
+        timestampLabel={t.substeps.ion_tc_aceptados.emailPreview}
+      />
+
+      <Paragraph style={{ marginTop: 8 }}>
+        {t.substeps.ion_tc_aceptados.description}
+      </Paragraph>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.ion_tc_aceptados.locateEmail}
+        description={t.substeps.ion_tc_aceptados.locateEmailDesc}
+        style={{ marginBottom: 12 }}
+      />
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.ion_tc_aceptados.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            { title: t.substeps.ion_tc_aceptados.step1 },
+            { title: t.substeps.ion_tc_aceptados.step2 },
+            { title: t.substeps.ion_tc_aceptados.step3 },
+            { title: t.substeps.ion_tc_aceptados.step4 },
+            { title: t.substeps.ion_tc_aceptados.step5 },
+          ]}
+        />
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.ion_tc_aceptados.notReceivedTitle}
+        </Title>
+        <Space direction="vertical" size="small" style={{ width: "100%" }}>
+          <Space>
+            <UserOutlined style={{ color: "#1677ff" }} />
+            <Text>{t.substeps.ion_tc_aceptados.contactCSM}</Text>
+          </Space>
+          <Space>
+            <MailOutlined style={{ color: "#1677ff" }} />
+            <Link href="mailto:customersuccess.es@tdsynnex.com">
+              customersuccess.es@tdsynnex.com
+            </Link>
+          </Space>
+        </Space>
+      </div>
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Access ION Content (Subpaso 3.2 - Credenciales de acceso)
+// ============================================================
+function AccessIONContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.access_ion.title}
+        </Title>
+      </div>
+
+      <EmailPushNotification
+        initials="CB"
+        from="businessexperiencesu@techdata.com"
+        subject="StreamOne® ION Platform Credentials"
+        timestampLabel={t.substeps.access_ion.emailPreview}
+      />
+
+      <Paragraph style={{ marginTop: 8 }}>
+        {t.substeps.access_ion.description1}
+      </Paragraph>
+
+      <Paragraph>
+        {t.substeps.access_ion.description2}
+      </Paragraph>
+
+      <CompactAlert
+        type="error"
+        showIcon
+        message={t.substeps.access_ion.important}
+        description={t.substeps.access_ion.importantDesc}
+      />
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Program Request Content (Subpaso 3.3 - Solicitud de programas)
+// ============================================================
+function ProgramRequestContent({ context }: { context?: InstructionContext }) {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+  const programLabel = getProgramLabel(context);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.program_request.title} {programLabel}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.program_request.description}
+        </Paragraph>
+      </div>
+
+      <div>
+        <Text strong style={{ display: "block", marginBottom: 12 }}>
+          {t.substeps.program_request.stepsTitle}
+        </Text>
+        <InstructionSteps
+          items={[
+            {
+              title: t.substeps.program_request.step1,
+              description: (
+                <a href="https://ion.tdsynnex.com/" target="_blank" rel="noreferrer">
+                  {t.substeps.program_request.step1Link}
+                </a>
+              ),
+            },
+            {
+              title: t.substeps.program_request.step2,
+            },
+            {
+              title: t.substeps.program_request.step3,
+            },
+            {
+              title: `${t.substeps.program_request.step4} ${programLabel}.`,
+            },
+            {
+              title: t.substeps.program_request.step5,
+            },
+          ]}
+        />
+      </div>
+
+      {isManufacturer(context, "MICROSOFT") && (
+        <CompactAlert
+          type="error"
+          showIcon
+          message={t.substeps.program_request.microsoftWarning}
+          description={t.substeps.program_request.microsoftWarningDesc}
+        />
+      )}
+
+      {isManufacturer(context, "GOOGLE") && (
+        <CompactAlert
+          type="error"
+          showIcon
+          message={t.substeps.program_request.googleWarning}
+          description={t.substeps.program_request.googleWarningDesc}
+        />
+      )}
+
+      {isManufacturer(context, "AWS") && (
+        <CompactAlert
+          type="info"
+          showIcon
+          message={t.substeps.program_request.awsNote}
+          description={t.substeps.program_request.awsNoteDesc}
+        />
+      )}
+    </Space>
+  );
+}
+
+// ============================================================
+// COMPONENTE: Onboarding Complete Content (Subpaso 3.4 - Autorización de programas)
+// ============================================================
+function OnboardingCompleteContent() {
+  const lang: Language =
+    typeof window !== "undefined"
+      ? ((localStorage.getItem("language") as Language) || "es")
+      : "es";
+  const t = useTrackerTranslations(lang);
+
+  return (
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <div>
+        <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
+          {t.substeps.onboarding_complete.title}
+        </Title>
+        <Paragraph style={{ marginBottom: 16 }}>
+          {t.substeps.onboarding_complete.description}
+        </Paragraph>
+      </div>
+
+      <Paragraph>
+        {t.substeps.onboarding_complete.confirmation}
+      </Paragraph>
+
+      <CompactAlert
+        type="info"
+        showIcon
+        message={t.substeps.onboarding_complete.whileReviewing}
+        description={t.substeps.onboarding_complete.whileReviewingDesc}
+      />
+    </Space>
+  );
+}
+
 /**
  * Devuelve el contenido de instrucciones específico para cada subpaso
  * @param substepKey - La clave del subpaso (key)
@@ -260,672 +1241,68 @@ export function getSubstepInstructionContent(
     // Subpaso 1.1 — Formulario de alta en TD SYNNEX
     // ============================================================
     case "Alta_Hola_TDSynnex_":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Formulario de alta en TD SYNNEX
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Accede al formulario de alta y complétalo con los datos solicitados.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Antes de iniciar"
-            description="Prepara 1 documento acreditativo del epígrafe/actividad antes de comenzar."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              <FileTextOutlined /> Acción requerida
-            </Text>
-            <a
-              href="https://www.holatdsynnex.com/alta_cliente_td_synnex.html"
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 15 }}
-            >
-              Acceder al formulario de alta →
-            </a>
-          </div>
-
-          <Divider style={{ margin: "8px 0" }} />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Documentos aceptados (uno de los siguientes):
-            </Text>
-            <List
-              size="small"
-              dataSource={[
-                {
-                  title: "IAE (Impuesto de Actividades Económicas)",
-                  description:
-                    "Copia del último impuesto/recibo de pago donde se vea claramente el epígrafe.",
-                },
-                {
-                  title: "Declaración censal (036)",
-                  description:
-                    "Copia del modelo 036 donde se vea claramente el epígrafe en el que estás inscrito.",
-                },
-                {
-                  title: "Certificado AEAT",
-                  description: "Copia del certificado de revendedor AEAT.",
-                },
-              ]}
-              renderItem={(item, idx) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={
-                      <Tag color="blue" style={{ marginTop: 4 }}>
-                        {idx + 1}
-                      </Tag>
-                    }
-                    title={<Text strong>{item.title}</Text>}
-                    description={<Text type="secondary">{item.description}</Text>}
-                  />
-                </List.Item>
-              )}
-            />
-          </div>
-
-          <CompactAlert
-            type="warning"
-            showIcon
-            icon={<SafetyOutlined />}
-            message="Revisión interna"
-            description="Una vez enviado el formulario, la solicitud pasará a revisión interna por parte de nuestro equipo."
-          />
-        </Space>
-      );
+      return <AltaHolaTDSynnexContent />;
 
     // ============================================================
     // Subpaso 1.2 — Confirmación de la cuenta en TD SYNNEX
     // ============================================================
     case "Ecommerce_GK_":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Confirmación de la cuenta en TD SYNNEX
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Tras enviar el formulario, revisamos la solicitud. Dependiendo del resultado, recibirás
-              un correo con información adicional o la confirmación de tu cuenta.
-            </Paragraph>
-          </div>
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Posibles escenarios:
-            </Text>
-            <List
-              size="small"
-              dataSource={[
-                {
-                  icon: <MailOutlined style={{ color: "#1677ff" }} />,
-                  title: "Solicitud de información adicional",
-                  description:
-                    "Si falta algún dato o documento, enviaremos un correo solicitándolo desde altaclientes.es@tdsynnex.com.",
-                },
-                {
-                  icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
-                  title: "Confirmación de alta",
-                  description:
-                    "Cuando la cuenta esté creada, enviaremos un correo de confirmación con la información de la cuenta.",
-                },
-              ]}
-              renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={item.icon}
-                    title={<Text strong>{item.title}</Text>}
-                    description={<Text type="secondary">{item.description}</Text>}
-                  />
-                </List.Item>
-              )}
-            />
-          </div>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Revisa tu bandeja de spam"
-            description="Recomendamos revisar la carpeta de spam/no deseado para no perder ninguna comunicación."
-          />
-        </Space>
-      );
+      return <EcommerceGKContent />;
 
     // ============================================================
     // Subpaso 1.3 — Formulario de solicitud de línea de crédito (SEPA B2B)
     // ============================================================
     case "SEPA_B2B_Completado":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Solicitud de línea de crédito (SEPA B2B)
-            </Title>
-          </div>
-
-          <CompactAlert
-            type="warning"
-            showIcon
-            icon={<WarningOutlined />}
-            message="Requisito previo"
-            description="Este paso se realiza únicamente cuando la cuenta en TD SYNNEX ya está creada."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Accede al formulario SEPA B2B",
-                  description: (
-                    <a href="https://www.holatdsynnex.com/sepaB2B.html" target="_blank" rel="noreferrer">
-                      Ir al formulario →
-                    </a>
-                  ),
-                },
-                {
-                  title: "Inicia sesión con tus credenciales del Área Clientes",
-                },
-                {
-                  title: "Completa el formulario con la información solicitada",
-                },
-                {
-                  title: 'Recibe por email el PDF "Mandato SEPA B2B"',
-                },
-                {
-                  title: "Firma el PDF y adjúntalo en el formulario junto al certificado de titularidad de la cuenta bancaria indicada",
-                },
-              ]}
-            />
-          </div>
-
-          <CompactAlert
-            type="error"
-            showIcon
-            message="Importante: Firma del mandato SEPA B2B"
-            description="Si el mandato SEPA B2B no está firmado y adjuntado, la solicitud puede ser revocada y será necesario repetir el proceso."
-          />
-        </Space>
-      );
+      return <SepaB2BContent />;
 
     // ============================================================
     // Subpaso 1.4 — Confirmación de asignación de condiciones de crédito
     // ============================================================
     case "RMT_CT_Completado":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Confirmación de condiciones de crédito
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Tras enviar el SEPA B2B con la documentación requerida, el equipo financiero revisa la
-              solicitud y asigna las condiciones de crédito correspondientes.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Documentación adicional"
-            description="Es posible que el equipo financiero solicite documentación adicional para completar la revisión (ejemplos: último impuesto de sociedades, balance oficial, etc.)."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              <CheckCircleOutlined style={{ color: "#52c41a", marginRight: 6 }} />
-              Confirmación final
-            </Text>
-            <Paragraph>
-              La confirmación de las condiciones de crédito se comunicará en el mismo hilo de correo del
-              proceso de alta, desde Cloud Customer Success.
-            </Paragraph>
-          </div>
-        </Space>
-      );
+      return <RmtCtContent />;
 
     // ============================================================
     // PASO 2 MICROSOFT — Subpaso 2.1: Alta Microsoft AI Cloud Partner Program
     // ============================================================
     case "Alta_MF_Cloud_AI":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              <CloudOutlined style={{ marginRight: 8 }} />
-              Alta en Microsoft AI Cloud Partner Program
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Este alta es necesaria si aún no dispones de Partner Center. Habilita el acceso al Partner
-              Center de Microsoft, la plataforma central para gestionar tu relación como partner.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Creación del Partner Center"
-            description="Este proceso crea o habilita el acceso al Partner Center de Microsoft."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              <LinkOutlined style={{ marginRight: 6 }} />
-              Acción requerida
-            </Text>
-            <a
-              href="https://partner.microsoft.com/en-us/dashboard/account/v3/enrollment/introduction/partnership"
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 15 }}
-            >
-              Acceder al registro de Partnership →
-            </a>
-          </div>
-
-          <Divider style={{ margin: "12px 0" }} />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Acceder al enlace de registro",
-                  description: "Haz clic en el enlace del Partner Enrollment de Microsoft.",
-                },
-                {
-                  title: 'Seleccionar únicamente la opción "Asóciese"',
-                  description: "Del listado de opciones, marca solo 'Asóciese' (Associate/Partnership).",
-                },
-                {
-                  title: "Iniciar sesión con la cuenta profesional de Office 365",
-                  description:
-                    "Usa tu cuenta corporativa de Office 365. Si no tienes una, crea una nueva cuenta profesional Microsoft.",
-                },
-                {
-                  title: "Seguir el asistente de registro",
-                  description: "Completa la información solicitada en el formulario de registro.",
-                },
-                {
-                  title: "Finalizar el registro y comprobar el acceso",
-                  description:
-                    "Una vez finalizado, la página redirige al Partner Center. Verifica que puedes acceder correctamente.",
-                },
-              ]}
-            />
-          </div>
-
-          <CompactAlert
-            type="warning"
-            showIcon
-            icon={<WarningOutlined />}
-            message="Importante: Cuenta profesional"
-            description="Usa una cuenta profesional (tenant corporativo) para evitar incidencias de administración y facturación."
-          />
-        </Space>
-      );
+      return <AltaMFCloudAIContent />;
 
     // ============================================================
     // PASO 2 MICROSOFT — Subpaso 2.2: Alta Cloud Solutions Provider
     // ============================================================
     case "Alta_PAC_MFT":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              <CloudOutlined style={{ marginRight: 8 }} />
-              Alta en Cloud Solutions Provider (CSP)
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Esta alta te habilita para operar como revendedor autorizado Microsoft CSP. Requiere tener
-              ya Partner Center activo.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Requisito previo"
-            description="Debes disponer de acceso al Partner Center antes de iniciar este paso."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              <LinkOutlined style={{ marginRight: 6 }} />
-              Acción requerida
-            </Text>
-            <a
-              href="https://partner.microsoft.com/en-us/dashboard/account/v3/enrollment/introduction/partnership"
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 15 }}
-            >
-              Acceder al registro de Partnership →
-            </a>
-          </div>
-
-          <Divider style={{ margin: "12px 0" }} />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Acceder al enlace de registro",
-                  description: "Haz clic en el enlace del Partner Enrollment.",
-                },
-                {
-                  title: 'Seleccionar la opción "Revender"',
-                  description:
-                    "Del listado de opciones, marca 'Revender' (o 'Resell' si aparece en inglés).",
-                },
-                {
-                  title: "Iniciar sesión con credenciales del Partner Center",
-                  description: "Usa las credenciales de la cuenta que ya tiene acceso al Partner Center.",
-                },
-                {
-                  title: "Seguir el asistente y completar la información",
-                  description: "Rellena los datos solicitados en el formulario.",
-                },
-                {
-                  title: "Finalizar y verificar el Partner Center",
-                  description: "Comprueba que el Partner Center queda operativo tras el registro.",
-                },
-              ]}
-            />
-          </div>
-
-          <CompactAlert
-            type="warning"
-            showIcon
-            icon={<WarningOutlined />}
-            message="Nota sobre idioma"
-            description="Si el portal muestra opciones en inglés, localiza 'Resell' como equivalente a 'Revender'."
-          />
-        </Space>
-      );
+      return <AltaPACMFTContent />;
 
     // ============================================================
     // PASO 2 MICROSOFT — Subpaso 2.3: Indirect Reseller Relationship
     // ============================================================
     case "TD_handshake_MFT":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              <SafetyOutlined style={{ marginRight: 8 }} />
-              Indirect Reseller Relationship
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Una vez habilitado como CSP, debes aceptar la invitación para establecer la relación Indirect
-              Provider ↔ Indirect Reseller con TD SYNNEX.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Paso imprescindible"
-            description="Este paso es imprescindible para que TD SYNNEX pueda asociar la cuenta del Partner Center y operar como proveedor indirecto."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              <LinkOutlined style={{ marginRight: 6 }} />
-              Acción requerida: Aceptar invitación
-            </Text>
-            <a
-              href="https://admin.microsoft.com/Adminportal/Home?invType=IndirectResellerRelationship&partnerId=df2ef418-7c5b-4ca0-a7c1-8f230e4019da&msppId=6531449&indirectCSPId=75af751c-f582-45e7-aee2-0fd6c8203c1d#/partners/invitation"
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 15 }}
-            >
-              Abrir enlace de invitación de TD SYNNEX →
-            </a>
-          </div>
-
-          <Divider style={{ margin: "12px 0" }} />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Abrir el enlace de invitación",
-                  description: "Haz clic en el enlace de invitación de TD SYNNEX.",
-                },
-                {
-                  title: "Iniciar sesión con credenciales del Partner Center",
-                  description: "Usa las credenciales de la cuenta con acceso al Partner Center.",
-                },
-                {
-                  title: "Revisar los términos y condiciones",
-                  description: "Lee los términos de la asociación Indirect Provider ↔ Indirect Reseller.",
-                },
-                {
-                  title: "Firmar/Aceptar el Indirect Reseller Relationship",
-                  description: "Acepta la invitación para establecer la relación indirecta.",
-                },
-                {
-                  title: "Confirmar que la relación queda aceptada",
-                  description: "Verifica que la relación con TD SYNNEX queda establecida correctamente.",
-                },
-              ]}
-            />
-          </div>
-
-          <CompactAlert
-            type="warning"
-            showIcon
-            icon={<WarningOutlined />}
-            message="Permisos de administración"
-            description="Asegúrate de usar el usuario con permisos de administración en el tenant para completar la aceptación."
-          />
-        </Space>
-      );
+      return <TDHandshakeMFTContent />;
 
     // ============================================================
     // PASO 2 AWS — Subpaso 2.1: Alta en AWS Partner Central
     // ============================================================
     case "AWS Partner Account":
       if (!isManufacturer(context, "AWS")) {
-        return (
-          <CompactAlert
-            type="info"
-            showIcon
-            message="No aplica"
-            description="Este subpaso solo aplica para onboardings con fabricante AWS."
-          />
-        );
+        return <AWSNotApplicableAlert />;
       }
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Alta en AWS Partner Central
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              En este paso registramos la empresa en AWS Partner Central desde la AWS Console usando una AWS Account. La persona que realice el registro debe tener autoridad legal para aceptar los términos.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="success"
-            showIcon
-            message="Si ya dispones de AWS Partner Central"
-            description="Si la organización ya dispone de AWS Partner Central, no crees uno nuevo. Marca este paso como completado y confirma en el siguiente paso si ya estás enrolado en un Partner Path."
-          />
-
-          <CompactAlert
-            type="error"
-            showIcon
-            message="Requisito previo"
-            description="Requisito: disponer de una AWS Account que se usará como cuenta vinculada/designada para Partner Central + acceso a la AWS Console."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Seleccionar la AWS Account",
-                  description: "Seleccionar la AWS Account que usará la organización para gestionar Partner Central.",
-                },
-                {
-                  title: "Iniciar sesión en AWS Console",
-                  description: "Iniciar sesión en la AWS Console con esa cuenta.",
-                },
-                {
-                  title: "Abrir AWS Partner Central",
-                  description: 'En el buscador, abrir "AWS Partner Central" y pulsar "Get started".',
-                },
-                {
-                  title: "Completar verificación de identidad",
-                  description: 'Revisar requisitos → "Continue to Registration" → Escanear el QR y completar el flujo (selfie + ID) → "Next" hasta ver "Complete".',
-                },
-                {
-                  title: "Completar verificación de negocio",
-                  description: "Completar la verificación de negocio con datos fiscales/legales → revisar → enviar.",
-                },
-                {
-                  title: "Finalizar registro",
-                  description: 'Con ambas verificaciones validadas, pulsar "Continue Registration" para finalizar el formulario.',
-                },
-              ]}
-            />
-          </div>
-        </Space>
-      );
+      return <AWSPartnerAccountContent />;
 
     // ============================================================
     // PASO 2 AWS — Subpaso 2.2: Enrólate en un Partner Path
     // ============================================================
     case "AWS_Partner_Engagement":
       if (!isManufacturer(context, "AWS")) {
-        return (
-          <CompactAlert
-            type="info"
-            showIcon
-            message="No aplica"
-            description="Este subpaso solo aplica para onboardings con fabricante AWS."
-          />
-        );
+        return <AWSNotApplicableAlert />;
       }
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Enrólate en un AWS Partner Path
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Selecciona el tipo de actividad como partner (Services o Software). Más adelante se podrán activar tantos Paths como sea necesario.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="success"
-            showIcon
-            message="Si ya estás registrado"
-            description="Si la organización ya está registrada en un Partner Path de AWS, marca este paso como completado."
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Explicación de los Partner Paths:
-            </Text>
-            <Collapse>
-              <Panel header="Services Path" key="1">
-                <Text>
-                  Orientado a consultoría, servicios gestionados y/o reventa de servicios sobre AWS.
-                </Text>
-              </Panel>
-              <Panel header="Software Path" key="2">
-                <Text>
-                  Orientado a organizaciones que desarrollan software propio basado o integrado con AWS.
-                </Text>
-              </Panel>
-            </Collapse>
-          </div>
-
-          <Divider style={{ margin: "12px 0" }} />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Iniciar sesión en AWS Partner Central",
-                  description: (
-                    <>
-                      Acceder a{" "}
-                      <a
-                        href="https://partnercentral.awspartner.com/partnercentral2/s/login"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        AWS Partner Central
-                      </a>
-                    </>
-                  ),
-                },
-                {
-                  title: "Deslizar hasta AWS Partner Paths",
-                  description: 'En Home, deslizar hasta la sección "AWS Partner Paths".',
-                },
-                {
-                  title: "Elegir el Path y enrollarse",
-                  description: 'Elegir el Path (Services o Software) y pulsar "Enroll".',
-                },
-                {
-                  title: "Revisar y continuar",
-                  description: 'Revisar la información y pulsar "Continuar".',
-                },
-              ]}
-            />
-          </div>
-        </Space>
-      );
+      return <AWSPartnerEngagementContent />;
 
     // ============================================================
     // PASO 2 AWS — Subpaso 2.3: Completa el AWS Form
     // ============================================================
     case "AWS Form":
       if (!isManufacturer(context, "AWS")) {
-        return (
-          <CompactAlert
-            type="info"
-            showIcon
-            message="No aplica"
-            description="Este subpaso solo aplica para onboardings con fabricante AWS."
-          />
-        );
+        return <AWSNotApplicableAlert />;
       }
       return <AWSFormComponent context={context} />;
 
@@ -934,170 +1311,25 @@ export function getSubstepInstructionContent(
     // ============================================================
     case "AWS_DSA":
       if (!isManufacturer(context, "AWS")) {
-        return (
-          <CompactAlert
-            type="info"
-            showIcon
-            message="No aplica"
-            description="Este subpaso solo aplica para onboardings con fabricante AWS."
-          />
-        );
+        return <AWSNotApplicableAlert />;
       }
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Firma el DSA (Distribution Seller Agreement)
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              El Distribution Seller Agreement (DSA) es el contrato que habilita la reventa a través de TD SYNNEX como distribuidor mayorista autorizado de AWS.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="success"
-            showIcon
-            message="Si ya dispones de DSA firmado"
-            description="Si la organización ya dispone de un Distribution Seller Agreement firmado con TD SYNNEX en cualquier país de la región EEA, marca este paso como completado."
-          />
-
-          <CompactAlert
-            type="error"
-            showIcon
-            message="Firma requerida del Representante Legal"
-            description="Una vez el DSA esté firmado por TD SYNNEX y AWS, AWS enviará un email al Representante Legal del AWS Partner Central para firmar vía DocuSign. Sin esa firma, el contrato no es válido."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Acceder a AWS Partner Central",
-                  description: (
-                    <>
-                      Iniciar sesión en{" "}
-                      <a
-                        href="https://partnercentral.awspartner.com/partnercentral2/s/login"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        AWS Partner Central
-                      </a>
-                    </>
-                  ),
-                },
-                {
-                  title: "Ir a Programs → Engagement Requests",
-                  description: 'Ir a Programs → "Engagement Requests".',
-                },
-                {
-                  title: "Crear aplicación",
-                  description: 'Click en "Create application".',
-                },
-                {
-                  title: "Seleccionar país de transacción",
-                  description: "Seleccionar país de transacción (España o Portugal).",
-                },
-                {
-                  title: "Seleccionar TD SYNNEX Corporation",
-                  description: 'Seleccionar "TD SYNNEX Corporation".',
-                },
-                {
-                  title: "Cumplimentar información legal",
-                  description: "Cumplimentar la información legal → enviar solicitud.",
-                },
-              ]}
-            />
-          </div>
-        </Space>
-      );
+      return <AWSDSAContent />;
 
     // ============================================================
     // PASO 2 AWS — Subpaso 2.5: AWS Account linking / Marketplace
     // ============================================================
     case "AWS_Marketplace":
       if (!isManufacturer(context, "AWS")) {
-        return (
-          <CompactAlert
-            type="info"
-            showIcon
-            message="No aplica"
-            description="Este subpaso solo aplica para onboardings con fabricante AWS."
-          />
-        );
+        return <AWSNotApplicableAlert />;
       }
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              AWS Account linking (Partner Central ↔ AWS Marketplace)
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              Vincula la cuenta de AWS Partner Central con la cuenta de vendedor de AWS Marketplace.
-            </Paragraph>
-          </div>
-
-          <CompactAlert
-            type="error"
-            showIcon
-            message="Requisito: rol Alliance Lead o Cloud Admin"
-            description="Requisito: rol Alliance Lead o Cloud Admin. Durante el flujo se crean/asignan roles IAM estándar (PartnerCentralRoleForCloudAdmin / PartnerCentralRoleForAlliance / PartnerCentralRoleForAce)."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Iniciar sesión como Alliance Lead o Cloud Administrator",
-                  description: "Iniciar sesión en AWS Partner Central como Alliance Lead o Cloud Administrator.",
-                },
-                {
-                  title: "Seleccionar Vincular cuentas",
-                  description: 'En Home (arriba derecha) seleccionar "Vincular cuentas".',
-                },
-                {
-                  title: "Iniciar vinculación",
-                  description: 'Pulsar "Continuar con la vinculación de la cuenta" y después "Iniciar la vinculación de la cuenta".',
-                },
-                {
-                  title: "Verificar AWS Account ID",
-                  description: 'Se abre AWS Console: Verificar AWS Account ID. En "Denominación social legal", escribir razón social. "Siguiente".',
-                },
-                {
-                  title: "Marcar casillas según aplique",
-                  description: "Marcar casillas según aplique: Cloud Admin IAM role (PartnerCentralRoleForCloudAdmin-###), Alliance team IAM role (PartnerCentralRoleForAlliance-###), ACE IAM role (PartnerCentralRoleForAce-###).",
-                },
-                {
-                  title: "Vincular cuentas",
-                  description: '"Siguiente" → "Vincular cuentas" y verificar confirmación.',
-                },
-              ]}
-            />
-          </div>
-        </Space>
-      );
+      return <AWSMarketplaceContent />;
 
     // ============================================================
     // PASO 2 GOOGLE — Substep GROUP: Google Cloud ID
     // ============================================================
     case "GOOGLE_CLOUD_ID":
       if (!isManufacturer(context, "GOOGLE")) {
-        return (
-          <CompactAlert
-            type="info"
-            showIcon
-            message="No aplica"
-            description="Este subpaso solo aplica para onboardings con fabricante Google."
-          />
-        );
+        return <GoogleNotApplicableAlert />;
       }
       return <GoogleCloudIDForm context={context} />;
 
@@ -1105,215 +1337,33 @@ export function getSubstepInstructionContent(
     // PASO 3 — Subpaso 3.1: Términos y condiciones de StreamOne® ION
     // ============================================================
     case "ION_T&C_aceptados":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Términos y condiciones de StreamOne® ION
-            </Title>
-          </div>
-
-          <EmailPushNotification
-            initials="TS"
-            from="no-reply@bryter.io"
-            subject="TD SYNNEX - Streamone Ion Platform Agreement Terms - Please Acknowledge"
-            timestampLabel="ahora"
-          />
-
-          <Paragraph style={{ marginTop: 8 }}>
-            Desde TD SYNNEX hemos enviado los términos y condiciones de StreamOne® ION al correo
-            electrónico indicado para el proceso.
-          </Paragraph>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Localiza el email"
-            description="Localiza un email de no-reply@bryter.io con el asunto: TD SYNNEX - Streamone Ion Platform Agreement Terms - Please Acknowledge."
-            style={{ marginBottom: 12 }}
-          />
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                { title: "Localiza el email indicado en el buzón." },
-                { title: "Abre el enlace https://techdata-legal.bryter...." },
-                { title: "Revisa la información de la organización (panel izquierdo)." },
-                { title: "Revisa el contrato de StreamOne® ION (panel derecho)." },
-                { title: 'Selecciona "Acknowledge" y pulsa "Next" para confirmar los términos.' },
-              ]}
-            />
-          </div>
-
-          <Divider style={{ margin: "12px 0" }} />
-
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Si aún no has recibido el contrato de StreamOne® ION...
-            </Title>
-            <Space direction="vertical" size="small" style={{ width: "100%" }}>
-              <Space>
-                <UserOutlined style={{ color: "#1677ff" }} />
-                <Text>Contacta con tu Customer Success Manager</Text>
-              </Space>
-              <Space>
-                <MailOutlined style={{ color: "#1677ff" }} />
-                <Link href="mailto:customersuccess.es@tdsynnex.com">
-                  customersuccess.es@tdsynnex.com
-                </Link>
-              </Space>
-            </Space>
-          </div>
-        </Space>
-      );
+      return <IONTermsContent />;
 
     // ============================================================
-    // PASO 3 — Subpaso 3.2: Creación de la cuenta
+    // PASO 3 — Subpaso 3.2: Creación de la cuenta (Credenciales de acceso)
     // ============================================================
+    case "Access_ION":
+      return <AccessIONContent />;
+
+    // Legacy case for backwards compatibility
     case "Welcome_Email_OPS":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Creación de la cuenta
-            </Title>
-          </div>
-
-          <EmailPushNotification
-            initials="CB"
-            from="businessexperiencesu@techdata.com"
-            subject="StreamOne® ION Platform Credentials"
-            timestampLabel="ahora"
-          />
-
-          <Paragraph style={{ marginTop: 8 }}>
-            Desde TD SYNNEX crearemos el perfil de partner en StreamOne® ION y generaremos un único
-            usuario administrador asociado a la persona de contacto indicada en los términos y
-            condiciones del paso anterior.
-          </Paragraph>
-
-          <Paragraph>
-            Tras la creación del usuario, se recibirá un email de Cloud Business Support
-            (businessexperiencesu@techdata.com) con las instrucciones para configurar la contraseña.
-          </Paragraph>
-
-          <CompactAlert
-            type="error"
-            showIcon
-            message="Importante"
-            description="Disponer de una cuenta en StreamOne® ION no autoriza a transaccionar en la plataforma. Para ello es necesario solicitar acceso al programa del fabricante en el siguiente paso."
-          />
-        </Space>
-      );
+      return <AccessIONContent />;
 
     // ============================================================
     // PASO 3 — Subpaso 3.3: Solicitud del programa @Manufacturer
     // ============================================================
     case "Program_Request":
-      const programLabel = getProgramLabel(context);
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Solicitud del programa {programLabel}
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              En este paso se solicita el acceso al programa del fabricante para habilitar la
-              transacción en StreamOne® ION.
-            </Paragraph>
-          </div>
-
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 12 }}>
-              Pasos a seguir:
-            </Text>
-            <InstructionSteps
-              items={[
-                {
-                  title: "Accede a StreamOne® ION",
-                  description: (
-                    <a href="https://ion.tdsynnex.com/" target="_blank" rel="noreferrer">
-                      Ir a StreamOne® ION →
-                    </a>
-                  ),
-                },
-                {
-                  title: 'Dirígete a "Partners" en el menú superior.',
-                },
-                {
-                  title: 'Selecciona "Programs" en el menú lateral izquierdo.',
-                },
-                {
-                  title: `Busca y selecciona el programa: ${programLabel}.`,
-                },
-                {
-                  title: 'Pulsa "Request".',
-                },
-              ]}
-            />
-          </div>
-
-          {isManufacturer(context, "MICROSOFT") && (
-            <CompactAlert
-              type="error"
-              showIcon
-              message="Importante para Microsoft CSP"
-              description="Al solicitar el programa de Microsoft CSP, introduce el Partner Location Account (antes MPN ID). Se encuentra en Partner Center > Account Settings > Identifiers > CSP. Un PLA incorrecto provoca errores en pedidos desde StreamOne® ION."
-            />
-          )}
-
-          {isManufacturer(context, "GOOGLE") && (
-            <CompactAlert
-              type="error"
-              showIcon
-              message="Importante para Google"
-              description="Aunque el workload sea únicamente Google Cloud Platform, es necesario solicitar también Google Workspace Reseller Program además de GCP Reseller Program para poder transaccionar en StreamOne® ION."
-            />
-          )}
-
-          {isManufacturer(context, "AWS") && (
-            <CompactAlert
-              type="info"
-              showIcon
-              message="Nota para AWS"
-              description="El programa a solicitar depende del Partner Path seleccionado (Services Path → AWS Solutions Provider / Software Path → AWS Technology Partner Program). Asegúrate de seleccionar el programa adecuado."
-            />
-          )}
-        </Space>
-      );
+      return <ProgramRequestContent context={context} />;
 
     // ============================================================
     // PASO 3 — Subpaso 3.4: Autorización del programa
     // ============================================================
+    case "Onboarding_Complete":
+      return <OnboardingCompleteContent />;
+
+    // Legacy case for backwards compatibility
     case "PB_applied":
-      return (
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Title level={5} style={{ marginBottom: 8, fontSize: 17 }}>
-              Autorización del programa
-            </Title>
-            <Paragraph style={{ marginBottom: 16 }}>
-              TD SYNNEX está revisando la solicitud del programa. Si la configuración en el
-              fabricante es correcta, el programa quedará autorizado en las próximas horas.
-            </Paragraph>
-          </div>
-
-          <Paragraph>
-            El Customer Success Manager confirmará la autorización del programa. Con esta
-            confirmación, el proceso de alta en StreamOne® ION quedará completado.
-          </Paragraph>
-
-          <CompactAlert
-            type="info"
-            showIcon
-            message="Mientras el programa esté en revisión"
-            description="Mientras el programa esté en revisión, no se podrá transaccionar en StreamOne® ION."
-          />
-        </Space>
-      );
+      return <OnboardingCompleteContent />;
 
     // ============================================================
     // DEFAULT: Subpaso no contemplado

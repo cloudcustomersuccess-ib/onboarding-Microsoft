@@ -198,15 +198,7 @@ export const MAIN_STEPS: MainStepDefinition[] = [
         labelKey: "substeps.ion_tc_aceptados.label",
         type: "BOOLEAN",
         instructionsKey: "substeps.ion_tc_aceptados.instructions",
-        completedBy: "USER", // 3.1 - User marks as completed
-      },
-      {
-        key: "Program_Request",
-        fieldKey: "Program_Request",
-        labelKey: "substeps.program_request.label",
-        type: "BOOLEAN",
-        instructionsKey: "substeps.program_request.instructions",
-        completedBy: "TD_SYNNEX", // 3.2 - TD SYNNEX marks as completed from backend
+        completedBy: "USER", // 3.1 - Condiciones de StreamOne® ION
       },
       {
         key: "Access_ION",
@@ -214,7 +206,15 @@ export const MAIN_STEPS: MainStepDefinition[] = [
         labelKey: "substeps.access_ion.label",
         type: "BOOLEAN",
         instructionsKey: "substeps.access_ion.instructions",
-        completedBy: "USER", // 3.3 - User marks as completed
+        completedBy: "TD_SYNNEX", // 3.2 - Credenciales de acceso
+      },
+      {
+        key: "Program_Request",
+        fieldKey: "Program_Request",
+        labelKey: "substeps.program_request.label",
+        type: "BOOLEAN",
+        instructionsKey: "substeps.program_request.instructions",
+        completedBy: "USER", // 3.3 - Solicitud de programas
       },
       {
         key: "Onboarding_Complete",
@@ -222,7 +222,7 @@ export const MAIN_STEPS: MainStepDefinition[] = [
         labelKey: "substeps.onboarding_complete.label",
         type: "BOOLEAN",
         instructionsKey: "substeps.onboarding_complete.instructions",
-        completedBy: "TD_SYNNEX", // 3.4 - TD SYNNEX marks as completed from backend
+        completedBy: "TD_SYNNEX", // 3.4 - Autorización de programas
       },
     ],
   },
