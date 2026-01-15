@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dropdown, Typography } from "antd";
 import type { MenuProps } from "antd";
 import { GlobalOutlined } from "@ant-design/icons";
@@ -29,7 +29,11 @@ const languageNames: Record<Language, Record<Language, string>> = {
   en: { es: "Spanish", pt: "Portuguese", en: "English" },
 };
 
-export default function LanguageSelector() {
+interface LanguageSelectorProps {
+  placement?: "topRight" | "bottomRight" | "rightTop" | "right" | "topLeft" | "bottomLeft";
+}
+
+export default function LanguageSelector({ placement = "bottomRight" }: LanguageSelectorProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>("es");
   const [hovered, setHovered] = useState(false);
   const [open, setOpen] = useState(false);
@@ -44,6 +48,8 @@ export default function LanguageSelector() {
   const handleLanguageChange = (language: Language) => {
     setSelectedLanguage(language);
     localStorage.setItem("language", language);
+    // Dispatch custom event to notify other components about language change
+    window.dispatchEvent(new CustomEvent("languageChange", { detail: { language } }));
   };
 
   const currentLang = useMemo(
@@ -59,7 +65,7 @@ export default function LanguageSelector() {
           <div
             style={{
               display: "flex",
-              alignItems: "center", // ✅ centra en Y bandera + bloque de texto
+              alignItems: "center",
               gap: 10,
               padding: "4px 6px",
             }}
@@ -73,7 +79,6 @@ export default function LanguageSelector() {
               unoptimized
             />
 
-            {/* ✅ bloque de texto centrado en Y */}
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <Text style={{ fontSize: 13, lineHeight: "16px", fontWeight: 600 }}>
                 {lang.nativeName}
@@ -94,18 +99,72 @@ export default function LanguageSelector() {
 
   const active = hovered || open;
 
+  // Check if using sidebar style (right placement)
+  const isSidebarStyle = placement === "rightTop" || placement === "right";
+
+  // Map custom placement to Ant Design placement
+  const getAntPlacement = () => {
+    if (placement === "rightTop" || placement === "right") {
+      return "topRight";
+    }
+    return placement;
+  };
+
+  if (isSidebarStyle) {
+    return (
+      <Dropdown
+        menu={{
+          items: menuItems,
+        }}
+        trigger={["click"]}
+        placement={getAntPlacement()}
+        arrow
+        autoAdjustOverflow
+        dropdownRender={(menu) => (
+          <div className="sidebar-dropdown-content">
+            {menu}
+          </div>
+        )}
+        onOpenChange={(nextOpen) => setOpen(nextOpen)}
+      >
+        <button
+          type="button"
+          className="sidebar-menu-button sidebar-footer-button"
+          data-size="lg"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <span className="sidebar-footer-icon">
+            <GlobalOutlined />
+          </span>
+          <div className="sidebar-footer-info">
+            <span className="sidebar-footer-title">
+              {currentLang.nativeName}
+            </span>
+            <span className="sidebar-footer-subtitle">
+              Idioma
+            </span>
+          </div>
+          <span className="sidebar-footer-chevron">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </span>
+        </button>
+      </Dropdown>
+    );
+  }
+
   return (
     <Dropdown
       menu={{
         items: menuItems,
       }}
       trigger={["click"]}
-      placement="bottomRight"
+      placement={getAntPlacement()}
       arrow
-      overlayStyle={{ minWidth: 190 }}
       onOpenChange={(nextOpen) => setOpen(nextOpen)}
     >
-      {/* ✅ Trigger compacto, centrado, sin marco salvo hover/open */}
       <div
         role="button"
         tabIndex={0}

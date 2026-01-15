@@ -1,0 +1,677 @@
+/* ============================================
+   shadcn/ui Sidebar Styles
+   Adapted for Ant Design project
+   ============================================ */
+
+/* CSS Variables - Using your current color scheme */
+:root {
+  --sidebar-background: #003031;
+  --sidebar-foreground: rgba(255, 255, 255, 0.78);
+  --sidebar-primary: #005657;
+  --sidebar-primary-foreground: #eaffff;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #f3fffd;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-ring: rgba(0, 86, 87, 0.35);
+  --sidebar-muted: rgba(255, 255, 255, 0.55);
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================
+   Sidebar Wrapper (Provider container)
+   ============================================ */
+.sidebar-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: #f7f8fa;
+}
+
+:root[data-theme="dark"] .sidebar-wrapper {
+  background: #141414;
+}
+
+/* ============================================
+   Sidebar Container
+   ============================================ */
+.sidebar {
+  --sidebar-width-actual: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: var(--sidebar-width-actual);
+  background: var(--sidebar-background);
+  color: var(--sidebar-foreground);
+  border-right: 1px solid var(--sidebar-border);
+  transition: width 200ms linear;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Collapsed state */
+.sidebar[data-state="collapsed"][data-collapsible="icon"] {
+  --sidebar-width-actual: var(--sidebar-width-icon);
+}
+
+/* Static (non-collapsible) sidebar */
+.sidebar.sidebar-static {
+  width: var(--sidebar-width);
+}
+
+/* ============================================
+   Mobile Sidebar Styles
+   ============================================ */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.sidebar-overlay.sidebar-overlay-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar.sidebar-mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  height: 100vh;
+  width: var(--sidebar-width-mobile);
+  transform: translateX(-100%);
+  transition: transform 200ms ease;
+}
+
+.sidebar.sidebar-mobile.sidebar-mobile-open {
+  transform: translateX(0);
+}
+
+/* ============================================
+   Sidebar Header
+   ============================================ */
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+}
+
+.sidebar-brand-centered {
+  justify-content: center;
+}
+
+.sidebar-logo {
+  width: 140px;
+  height: auto;
+  object-fit: contain;
+  transition: width 200ms linear, opacity 200ms linear;
+}
+
+/* Logo when collapsed */
+.sidebar[data-state="collapsed"] .sidebar-logo {
+  width: 32px;
+  opacity: 0.9;
+}
+
+/* ============================================
+   Sidebar Search
+   ============================================ */
+.sidebar-search-wrapper {
+  overflow: hidden;
+  transition: opacity 200ms linear, max-height 200ms linear;
+  max-height: 60px;
+}
+
+.sidebar[data-state="collapsed"] .sidebar-search-wrapper {
+  opacity: 0;
+  max-height: 0;
+  pointer-events: none;
+}
+
+.sidebar-search.ant-input-affix-wrapper {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--sidebar-accent);
+  border: 1px solid var(--sidebar-border);
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.sidebar-search.ant-input-affix-wrapper:hover,
+.sidebar-search.ant-input-affix-wrapper:focus-within {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px var(--sidebar-ring);
+}
+
+.sidebar-search input {
+  color: #ffffff;
+}
+
+.sidebar-search input::placeholder {
+  color: var(--sidebar-muted);
+}
+
+.sidebar-search .ant-input-clear-icon {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ============================================
+   Sidebar Content (scrollable area)
+   ============================================ */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0;
+}
+
+/* Custom scrollbar */
+.sidebar-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================
+   Sidebar Group
+   ============================================ */
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.sidebar-group-label {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sidebar-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 200ms linear, padding 200ms linear;
+}
+
+/* Hide label when collapsed */
+.sidebar-group-label[data-state="collapsed"] {
+  opacity: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar-group-content {
+  width: 100%;
+}
+
+/* ============================================
+   Sidebar Menu
+   ============================================ */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 8px;
+  margin: 0;
+  list-style: none;
+  width: 100%;
+}
+
+.sidebar-menu-item {
+  position: relative;
+}
+
+/* ============================================
+   Sidebar Menu Button
+   ============================================ */
+.sidebar-menu-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sidebar-foreground);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+/* Size variants */
+.sidebar-menu-button[data-size="sm"] {
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.sidebar-menu-button[data-size="lg"] {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+/* Hover state */
+.sidebar-menu-button:hover {
+  background: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+}
+
+/* Active state */
+.sidebar-menu-button[data-active="true"] {
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+  font-weight: 600;
+}
+
+/* Focus state */
+.sidebar-menu-button:focus-visible {
+  outline: 2px solid var(--sidebar-ring);
+  outline-offset: -2px;
+}
+
+/* Collapsed state - center items */
+.sidebar-menu-button[data-state="collapsed"] {
+  justify-content: center;
+  padding: 8px;
+}
+
+/* ============================================
+   Sidebar Icon & Label
+   ============================================ */
+.sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-icon .anticon {
+  color: inherit;
+}
+
+.sidebar-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 200ms linear, width 200ms linear;
+}
+
+/* Hide label when collapsed */
+.sidebar-menu-button[data-state="collapsed"] .sidebar-label {
+  width: 0;
+  opacity: 0;
+}
+
+/* ============================================
+   Sidebar Footer
+   ============================================ */
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-top: 1px solid var(--sidebar-border);
+  margin-top: auto;
+}
+
+.sidebar-footer-menu {
+  padding: 0;
+  gap: 4px;
+}
+
+.sidebar-footer-button {
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-footer-button:hover {
+  background: var(--sidebar-accent);
+}
+
+.sidebar-footer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-footer-icon .anticon {
+  color: inherit;
+}
+
+.sidebar-footer-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  transition: opacity 200ms linear, width 200ms linear;
+}
+
+.sidebar-footer-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sidebar-primary-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.sidebar-footer-subtitle {
+  font-size: 11px;
+  color: var(--sidebar-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.sidebar-footer-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: opacity 150ms ease;
+}
+
+.sidebar-footer-button:hover .sidebar-footer-chevron {
+  opacity: 0.8;
+}
+
+/* Footer collapsed state */
+.sidebar[data-state="collapsed"] .sidebar-footer-info {
+  width: 0;
+  opacity: 0;
+}
+
+.sidebar[data-state="collapsed"] .sidebar-footer-chevron {
+  display: none;
+}
+
+.sidebar[data-state="collapsed"] .sidebar-footer-button {
+  justify-content: center;
+  padding: 8px;
+}
+
+/* User avatar in footer */
+.sidebar-user-button .sidebar-user-avatar {
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Sidebar Rail (Toggle button on edge)
+   ============================================ */
+.sidebar-rail {
+  position: absolute;
+  top: 0;
+  right: -12px;
+  z-index: 20;
+  width: 24px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: ew-resize;
+  outline: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.sidebar-rail::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 40px;
+  border-radius: 2px;
+  background: var(--sidebar-border);
+  opacity: 0;
+  transition: opacity 150ms ease, background 150ms ease;
+}
+
+.sidebar:hover .sidebar-rail {
+  opacity: 1;
+}
+
+.sidebar-rail:hover::after,
+.sidebar-rail:focus::after {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   Sidebar Trigger Button
+   ============================================ */
+.sidebar-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.sidebar-trigger:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-trigger:focus-visible {
+  outline: 2px solid var(--sidebar-ring);
+  outline-offset: 2px;
+}
+
+.sidebar-trigger svg {
+  transition: transform 200ms ease;
+}
+
+.sidebar-trigger[data-state="collapsed"] svg {
+  transform: rotate(180deg);
+}
+
+:root[data-theme="dark"] .sidebar-trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================
+   Sidebar Inset (Main content area)
+   ============================================ */
+.sidebar-inset {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f7f8fa;
+}
+
+:root[data-theme="dark"] .sidebar-inset {
+  background: #141414;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .app-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-content {
+  flex: 1;
+  overflow: auto;
+  padding: 24px 16px;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 12px 16px 20px;
+  flex-shrink: 0;
+}
+
+.app-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.app-footer-logo {
+  object-fit: contain;
+}
+
+.app-footer-text {
+  font-size: 14px;
+}
+
+/* ============================================
+   Tooltip (for collapsed menu items)
+   ============================================ */
+.sidebar-tooltip {
+  z-index: 100;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: var(--sidebar-background);
+  color: var(--sidebar-primary-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: tooltip-fade-in 150ms ease;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   Sidebar Separator
+   ============================================ */
+.sidebar-separator {
+  height: 1px;
+  margin: 8px 12px;
+  background: var(--sidebar-border);
+}
+
+/* ============================================
+   Sidebar Menu Badge
+   ============================================ */
+.sidebar-menu-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  margin-left: auto;
+  transition: opacity 200ms linear;
+}
+
+.sidebar-menu-button[data-state="collapsed"] .sidebar-menu-badge {
+  opacity: 0;
+  position: absolute;
+}
+
+/* ============================================
+   Responsive adjustments
+   ============================================ */
+@media (max-width: 767px) {
+  .sidebar-wrapper {
+    flex-direction: column;
+  }
+
+  .sidebar-inset {
+    min-height: 100vh;
+  }
+}

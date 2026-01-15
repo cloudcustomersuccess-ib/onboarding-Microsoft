@@ -48,12 +48,24 @@ export default function OnboardingTrackerContent({
   const [currentMainStepIndex, setCurrentMainStepIndex] = useState(0);
   const [currentSubstepIndex, setCurrentSubstepIndex] = useState(0);
 
-  // i18n
-  const lang: Language =
+  // i18n - reactive to language changes
+  const [lang, setLang] = useState<Language>(
     typeof window !== "undefined"
       ? ((localStorage.getItem("language") as Language) || "es")
-      : "es";
+      : "es"
+  );
   const t = useTrackerTranslations(lang);
+
+  // Listen for language changes
+  useEffect(() => {
+    const handleLanguageChange = (event: CustomEvent<{ language: Language }>) => {
+      setLang(event.detail.language);
+    };
+    window.addEventListener("languageChange", handleLanguageChange as EventListener);
+    return () => {
+      window.removeEventListener("languageChange", handleLanguageChange as EventListener);
+    };
+  }, []);
   const currentUserId = getUser()?.UserId || "";
 
   // Fetch data

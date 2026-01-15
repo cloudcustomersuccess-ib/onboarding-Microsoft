@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  Layout,
-  Menu,
   Typography,
-  Space,
   Avatar,
   Input,
   ConfigProvider,
@@ -22,15 +19,30 @@ import {
   LogoutOutlined,
   SettingOutlined,
   IdcardOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { getUser, clearSession, isAuthenticated } from "@/lib/session";
 import type { User } from "@/types";
 import Image from "next/image";
-import ThemeSwitch from "@/components/ThemeSwitch";
 import LanguageSelector from "@/components/LanguageSelector";
-
-const { Header, Sider, Content, Footer } = Layout;
+import {
+  SidebarProvider,
+  SidebarInset,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarRail,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+} from "@/components/animate-ui/components/radix/sidebar";
+import "./sidebar.css";
 const { Text } = Typography;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +50,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
@@ -60,10 +71,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  const handleThemeToggle = (checked: boolean) => {
-    setIsDarkMode(checked);
-    localStorage.setItem("theme", checked ? "dark" : "light");
-    document.documentElement.setAttribute("data-theme", checked ? "dark" : "light");
+  const handleThemeToggle = (dark: boolean) => {
+    setIsDarkMode(dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
   };
 
   const handleLogout = () => {
@@ -98,7 +109,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       icon: <IdcardOutlined />,
       label: "Mi Perfil",
       onClick: () => {
-        // TODO: Navegar a la página de perfil
         console.log("Navegar a perfil");
       },
     },
@@ -107,7 +117,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       icon: <SettingOutlined />,
       label: "Configuración",
       onClick: () => {
-        // TODO: Navegar a la página de configuración
         console.log("Navegar a configuración");
       },
     },
@@ -120,6 +129,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       label: "Cerrar Sesión",
       danger: true,
       onClick: handleLogout,
+    },
+  ];
+
+  const themeMenuItems: MenuProps["items"] = [
+    {
+      key: "light",
+      icon: <SunOutlined />,
+      label: "Modo Claro",
+      onClick: () => handleThemeToggle(false),
+    },
+    {
+      key: "dark",
+      icon: <MoonOutlined />,
+      label: "Modo Oscuro",
+      onClick: () => handleThemeToggle(true),
     },
   ];
 
@@ -166,6 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const selectedKey = getSelectedKey();
   const { defaultAlgorithm, darkAlgorithm } = theme;
   const controlBg = isDarkMode ? "rgba(255, 255, 255, 0.08)" : "#f1f3f5";
   const controlBgActive = isDarkMode ? "rgba(255, 255, 255, 0.16)" : "#ffffff";
@@ -239,177 +264,137 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      <Layout style={{ minHeight: "100vh", maxHeight: "100vh", overflow: "hidden" }}>
-        <Sider
-          collapsible
-          collapsed={collapsed}
-          onCollapse={(value) => setCollapsed(value)}
-          width={250}
-          style={{
-            boxShadow: "2px 0 8px rgba(0,0,0,0.08)",
-            position: "fixed",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            overflow: "auto",
-            zIndex: 1000,
-          }}
-        >
-          {/* Logo Header */}
-          <div
-            style={{
-              height: "64px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: collapsed ? "16px 8px" : "16px 24px",
-              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #e1e6ea",
-            }}
-          >
-            {!collapsed ? (
+      <SidebarProvider>
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <div className="sidebar-brand sidebar-brand-centered">
               <Image
-                src={
-                  isDarkMode
-                    ? "https://i.imgur.com/QDeVhJp.png"
-                    : "https://i.imgur.com/46EQNul.png"
-                }
+                src="/images/Growth_Lab_Dark_Mode.png"
                 alt="Growth Lab"
                 width={180}
                 height={48}
-                style={{ objectFit: "contain" }}
+                className="sidebar-logo"
               />
-            ) : (
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  background: "linear-gradient(135deg, #005657 0%, #003031 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "bold",
-                  color: "#fff",
-                  fontSize: "16px",
-                }}
-              >
-                GL
-              </div>
-            )}
-          </div>
-
-          <Menu
-            theme={isDarkMode ? "dark" : "light"}
-            mode="inline"
-            selectedKeys={[getSelectedKey()]}
-            items={menuItems}
-            onClick={({ key }) => router.push(key)}
-            style={{
-              border: "none",
-              marginTop: "8px",
-            }}
-          />
-        </Sider>
-
-        <Layout style={{ marginLeft: collapsed ? 80 : 250, transition: "margin-left 0.2s", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-          <Header
-            style={{
-              padding: "0 32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-              position: "fixed",
-              top: 0,
-              right: 0,
-              left: collapsed ? 80 : 250,
-              zIndex: 999,
-              height: "64px",
-              borderBottom: isDarkMode ? "1px solid #303030" : "1px solid #e1e6ea",
-              transition: "left 0.2s",
-            }}
-          >
-            {/* Left: Theme Toggle */}
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <ThemeSwitch checked={isDarkMode} onChange={handleThemeToggle} />
             </div>
+            <div className="sidebar-search-wrapper">
+              <Input
+                placeholder="Buscar..."
+                prefix={<SearchOutlined style={{ color: "rgba(255, 255, 255, 0.5)" }} />}
+                size="large"
+                className="sidebar-search"
+                allowClear
+              />
+            </div>
+          </SidebarHeader>
 
-            {/* Right: Search + Language + User Badge */}
-            <Space size={20} align="center">
-              <div
-                onMouseEnter={(e) => {
-                  const input = e.currentTarget.querySelector("input");
-                  if (input) input.style.opacity = "0.7";
-                }}
-                onMouseLeave={(e) => {
-                  const input = e.currentTarget.querySelector("input");
-                  if (input) input.style.opacity = "1";
-                }}
-              >
-                <Input
-                  placeholder="Buscar..."
-                  prefix={<SearchOutlined />}
-                  size="large"
-                  style={{
-                    width: "300px",
-                    borderRadius: "20px",
-                    transition: "opacity 160ms ease",
-                  }}
-                  allowClear
-                />
-              </div>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+              <SidebarMenu>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.key}>
+                    <SidebarMenuButton
+                      isActive={selectedKey === item.key}
+                      aria-current={selectedKey === item.key ? "page" : undefined}
+                      onClick={() => router.push(item.key)}
+                      tooltip={item.label}
+                    >
+                      <span className="sidebar-icon">{item.icon}</span>
+                      <span className="sidebar-label">{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
 
-              <LanguageSelector />
+          <SidebarFooter>
+            <SidebarMenu className="sidebar-footer-menu">
+              {/* Language Selector */}
+              <SidebarMenuItem>
+                <LanguageSelector placement="rightTop" />
+              </SidebarMenuItem>
 
-              <Dropdown
-                menu={{ items: userMenuItems }}
-                trigger={["click"]}
-                placement="bottomRight"
-                arrow
-              >
-                <div
-                  style={{
-                    cursor: "pointer",
-                    padding: "4px",
-                    borderRadius: "12px",
-                    transition: "opacity 160ms ease",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "56px",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = "0.7";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = "1";
-                  }}
+              {/* Theme Selector */}
+              <SidebarMenuItem>
+                <Dropdown
+                  menu={{ items: themeMenuItems }}
+                  trigger={["click"]}
+                  placement="topRight"
+                  arrow
                 >
-                  <Avatar
-                    src="/images/my-notion-face-portrait.png"
-                    size={48}
-                  />
-                </div>
-              </Dropdown>
-            </Space>
-          </Header>
+                  <SidebarMenuButton
+                    size="lg"
+                    className="sidebar-footer-button"
+                  >
+                    <span className="sidebar-footer-icon">
+                      {isDarkMode ? <MoonOutlined /> : <SunOutlined />}
+                    </span>
+                    <div className="sidebar-footer-info">
+                      <span className="sidebar-footer-title">
+                        {isDarkMode ? "Modo Oscuro" : "Modo Claro"}
+                      </span>
+                      <span className="sidebar-footer-subtitle">
+                        Apariencia
+                      </span>
+                    </div>
+                    <span className="sidebar-footer-chevron">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m9 18 6-6-6-6"/>
+                      </svg>
+                    </span>
+                  </SidebarMenuButton>
+                </Dropdown>
+              </SidebarMenuItem>
 
-          <Content
-            style={{
-              marginTop: "88px",
-              marginBottom: "24px",
-              marginLeft: "16px",
-              marginRight: "16px",
-              overflow: "auto",
-              flex: 1,
-              minHeight: 0,
-            }}
-          >
-            {children}
-          </Content>
+              {/* User Profile */}
+              <SidebarMenuItem>
+                <Dropdown
+                  menu={{ items: userMenuItems }}
+                  trigger={["click"]}
+                  placement="topRight"
+                  arrow
+                >
+                  <SidebarMenuButton
+                    size="lg"
+                    className="sidebar-footer-button sidebar-user-button"
+                  >
+                    <Avatar
+                      src="/images/my-notion-face-portrait.png"
+                      size={36}
+                      className="sidebar-user-avatar"
+                    />
+                    <div className="sidebar-footer-info">
+                      <span className="sidebar-footer-title">
+                        {user?.FullName ||
+                          (user?.Name && user?.Surname
+                            ? `${user.Name} ${user.Surname}`
+                            : user?.Email?.split("@")[0])}
+                      </span>
+                      <span className="sidebar-footer-subtitle">
+                        {user?.Email}
+                      </span>
+                    </div>
+                    <span className="sidebar-footer-chevron">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m9 18 6-6-6-6"/>
+                      </svg>
+                    </span>
+                  </SidebarMenuButton>
+                </Dropdown>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
 
-          <Footer style={{ textAlign: "center", flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+        <SidebarInset>
+          <header className="app-header">
+            <SidebarTrigger />
+          </header>
+          <main className="app-content">{children}</main>
+          <footer className="app-footer">
+            <div className="app-footer-inner">
               <Image
                 src={
                   isDarkMode
@@ -419,15 +404,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 alt="TD SYNNEX"
                 width={100}
                 height={24}
-                style={{ objectFit: "contain" }}
+                className="app-footer-logo"
               />
-              <Text type="secondary" style={{ fontSize: "14px" }}>
+              <Text type="secondary" className="app-footer-text">
                 | Growth Lab ©{new Date().getFullYear()} - All rights reserved
               </Text>
             </div>
-          </Footer>
-        </Layout>
-      </Layout>
+          </footer>
+        </SidebarInset>
+      </SidebarProvider>
     </ConfigProvider>
   );
 }
