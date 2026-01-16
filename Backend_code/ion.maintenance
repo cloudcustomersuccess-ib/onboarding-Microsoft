@@ -1,0 +1,150 @@
+/**
+ * ION Keep-Alive (rotación refresh token) + Purga por inactividad.
+ *
+ * Reglas:
+ * - Rotar refresh token cada X días para que no caduque (refresh expira a ~32 días).
+ * - Si lastUsedAt > 90 días -> purgar (needs_reauth) y NO mantener vivo.
+ *
+ * Depende de funciones existentes en tu proyecto:
+ * - ionSheet_()
+ * - ionConnFindByOrg_()
+ * - ionConnUpsert_()
+ * - ionDecryptToken_()
+ * - ionEncryptToken_()
+ * - ionRefreshTokens_()  // tu POST /oauth/token
+ * - now_()
+ * - ionParseDate_()
+ * - ionDaysBetween_()
+ */
+
+const ION_KEEPALIVE_EVERY_DAYS = 14;  // < 32 para ir seguros
+// ION_INACTIVITY_DAYS ya lo tienes = 90
+
+function ionInstallKeepAliveTrigger() {
+  // 1) Borra triggers existentes del mismo handler (evita duplicados)
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === "ionKeepAliveCron_") ScriptApp.deleteTrigger(t);
+  });
+
+  // 2) Crea trigger diario (03:00)
+  ScriptApp.newTrigger("ionKeepAliveCron_")
+    .timeBased()
+    .everyDays(1)
+    .atHour(3)
+    .create();
+
+  return { ok: true, msg: "Trigger creado: ionKeepAliveCron_ diario a las 03:00" };
+}
+
+function ionKeepAliveCron_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+
+  try {
+    const sh = ionSheet_();
+    const values = sh.getDataRange().getValues();
+    if (values.length < 2) return { ok: true, scanned: 0 };
+
+    const headers = values[0].map(h => String(h).trim());
+    const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
+
+    // columnas mínimas necesarias
+    const must = ["orgId", "status", "ionHostname", "refreshTokenCiphertext", "lastUsedAt", "revokedAt"];
+    must.forEach(k => {
+      if (idx[k] == null) throw new Error(`IonConnections: falta columna "${k}"`);
+    });
+
+    let scanned = 0, refreshed = 0, purged = 0, skipped = 0, errors = 0;
+    const now = new Date();
+
+    for (let r = 1; r < values.length; r++) {
+      scanned++;
+
+      const row = values[r];
+      const orgId = String(row[idx.orgId] || "").trim();
+      if (!orgId) { skipped++; continue; }
+
+      const status = String(row[idx.status] || "").trim();
+      const revokedAt = String(row[idx.revokedAt] || "").trim();
+      if (revokedAt) { skipped++; continue; }
+      if (status !== "connected") { skipped++; continue; }
+
+      // 1) Purga si lastUsedAt > 90 días
+      const lastUsedAt = ionParseDate_(row[idx.lastUsedAt]);
+      if (lastUsedAt && ionDaysBetween_(lastUsedAt, now) > ION_INACTIVITY_DAYS) {
+        ionPurgeConnection_(orgId, "Purged by cron: inactivity > 90 days");
+        purged++;
+        continue;
+      }
+
+      // 2) Keep-alive: rotar refresh cada X días (solo si el usuario no está inactivo)
+      const lastRefreshAt = idx.lastRefreshAt != null ? ionParseDate_(row[idx.lastRefreshAt]) : null;
+      const needRotate =
+        !lastRefreshAt || ionDaysBetween_(lastRefreshAt, now) >= ION_KEEPALIVE_EVERY_DAYS;
+
+      if (!needRotate) { skipped++; continue; }
+
+      try {
+        ionRotateRefreshTokenForOrg_(orgId);
+        refreshed++;
+      } catch (e) {
+        errors++;
+        ionConnUpsert_(orgId, {
+          status: "needs_reauth",
+          lastError: `KeepAlive failed: ${String(e && (e.message || e)).slice(0, 700)}`,
+          lastValidatedAt: now_(),
+        });
+      }
+    }
+
+    const result = { ok: true, scanned, refreshed, purged, skipped, errors };
+    Logger.log(JSON.stringify(result));
+    return result;
+
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}
+
+function ionRotateRefreshTokenForOrg_(orgId) {
+  const existing = ionConnFindByOrg_(orgId);
+  const conn = (existing && existing.data) || {};
+  if (!conn || String(conn.status) !== "connected") throw new Error("Not connected");
+
+  const hostname = String(conn.ionHostname || "").trim();
+  const refreshCipher = String(conn.refreshTokenCiphertext || "").trim();
+  if (!hostname) throw new Error("Missing ionHostname");
+  if (!refreshCipher) throw new Error("Missing refreshTokenCiphertext");
+
+  const refresh = ionDecryptToken_(refreshCipher);
+
+  // Tu función ya devuelve access_token + refresh_token rotado
+  const tokenPair = ionRefreshTokens_(hostname, refresh);
+
+  const accessNew = String(tokenPair.access_token || "").trim();
+  const refreshNew = String(tokenPair.refresh_token || "").trim();
+  const expiresIn = Number(tokenPair.expires_in || 0);
+
+  if (!accessNew) throw new Error("oauth/token did not return access_token");
+  // si el proveedor no rotase, usamos el mismo; pero en ION rota
+  const refreshToStore = refreshNew || refresh;
+
+  const accessExpiresAtIso = ionIsoPlusSeconds_(
+    expiresIn > 0 ? (expiresIn - ION_ACCESS_SKEW_SECONDS) : 0
+  );
+
+  const rotations = Number(conn.refreshRotations || 0) + 1;
+
+  ionConnUpsert_(orgId, {
+    accessTokenCiphertext: ionEncryptToken_(accessNew),
+    refreshTokenCiphertext: ionEncryptToken_(refreshToStore),
+    accessExpiresAt: accessExpiresAtIso,
+    lastRefreshAt: now_(),
+    refreshRotations: rotations,
+    lastValidatedAt: now_(),
+    lastError: "",
+    status: "connected",
+  });
+
+  return { ok: true, accessExpiresAt: accessExpiresAtIso, refreshRotations: rotations };
+}

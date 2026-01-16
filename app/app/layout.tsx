@@ -21,6 +21,8 @@ import {
   IdcardOutlined,
   SunOutlined,
   MoonOutlined,
+  WindowsOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { getUser, clearSession, isAuthenticated } from "@/lib/session";
@@ -152,6 +154,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       key: "/app/onboarding-tracker",
       icon: <AppstoreOutlined />,
       label: "Onboarding Tracker",
+    },
+    {
+      key: "/app/microsoft-growth",
+      icon: <WindowsOutlined />,
+      label: "Microsoft Growth",
+    },
+    {
+      key: "/app/mis-pedidos",
+      icon: <ShoppingCartOutlined />,
+      label: "Mis Pedidos",
     },
     {
       key: "/app/soporte",

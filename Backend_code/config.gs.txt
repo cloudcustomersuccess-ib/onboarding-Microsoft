@@ -20,6 +20,20 @@ const CONFIG = {
     AWS_REGISTRATION_SUBMISSIONS: "AwsRegistrationSubmissions",
   },
 
+PDF: {
+  AWS_TEMPLATE_FILE_ID: "11ZXjwsDywUidMCGt4ghAk76epzPOroQQe06KceUN3ZU",
+  // Opcional: carpeta donde guardar PDFs generados
+  AWS_OUTPUT_FOLDER_ID: "1OSxvDZpU3evwubqCwHchezG4ApVHEWOb", // si lo dejas "", lo guarda en My Drive root
+},
+
+POWER_AUTOMATE: {
+  // Flow con trigger: "When an HTTP request is received"
+  FLOW_URL: "PEGA_AQUI_URL_DEL_TRIGGER_HTTP",
+  // Secret para que el Flow valide que viene de Apps Script
+  FLOW_SECRET: "PEGA_UN_SECRET_LARGO",
+  AWS_PDF_FLOW_URL: "https://default7fe14ab68f5d413984bfcd8aed0ee6.b9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ebb2a773dee64f39b1fb1b1473997d1a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=w1-ujjJ5Rfe5YPaIlkX1B8lZUfnGO7vROOquyQIHss0",
+},
+
   // ✅ NUEVO: configuración de FORMS (endpoint público protegido por secret)
   FORMS: {
     // Secret que debe venir en req.body.secret (o query.secret) para /forms/aws-registration/save

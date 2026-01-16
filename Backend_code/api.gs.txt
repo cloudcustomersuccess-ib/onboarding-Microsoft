@@ -13,17 +13,23 @@ function apiHandle_(req) {
   if (path === "/auth/request-otp") return respond_(req, requestOtp_(req.body.email));
   if (path === "/auth/verify-otp") return respond_(req, verifyOtp_(req.body.email, req.body.otp));
 
-  // ✅ NUEVO: Guardar submission del form AWS Registration (público pero protegido por secret)
-  if (path === "/forms/aws-registration/save") {
-    return respond_(req, saveAwsRegistrationSubmission_(req));
-  }
+  // ✅ NUEVO: FORMS público con secret
+  if (path === "/forms/aws-registration/save") return respond_(req, saveAwsRegistrationSubmission_(req));
 
-  // Sync endpoint (protegido por secret en query o body)
+  // Sync endpoint (protegido por secret)
   if (path === "/sync/sharepoint") return respond_(req, syncFromSharePoint_(req));
 
   // Protected endpoints
   const auth = getAuth_(req);
   const user = auth.user;
+
+  // ✅ ION (protegidos)
+  if (path === "/integrations/ion/connect") return respond_(req, ionConnect_(req, user));
+  if (path === "/integrations/ion/ping") return respond_(req, ionPing_(req, user));
+  if (path === "/integrations/ion/subscriptions") return respond_(req, ionSubscriptions_(req, user));
+  if (path === "/integrations/ion/orders") return respond_(req, ionOrders_(req, user));
+  if (path === "/integrations/ion/orders/detail") return respond_(req, ionOrderDetail_(req, user));
+
 
   if (path === "/onboardings") return respond_(req, listOnboardings_(user));
 
@@ -46,13 +52,28 @@ function apiHandle_(req) {
 }
 
 function getAuth_(req) {
-  const token =
-    String(req.query.token || "").trim() ||
-    String(req.body.token || "").trim();
+  // ✅ Opción B: renombrado “bonito”
+  const sessionToken =
+    String((req.query && req.query.sessionToken) || "").trim() ||
+    String((req.body && req.body.sessionToken) || "").trim() ||
+    // ✅ backward compat (antiguo)
+    String((req.query && req.query.token) || "").trim() ||
+    String((req.body && req.body.token) || "").trim();
 
-  if (!token) throw new Error("Missing token (usa ?token=... o body.token)");
+  if (!sessionToken) throw new Error("Missing sessionToken (usa ?sessionToken=... o body.sessionToken)");
 
-  const payload = verifyToken_(token);
+  const payload = verifyToken_(sessionToken);
+  return { user: payload };
+}
+
+function getAuth_(req) {
+  const sessionToken =
+    String((req.query && req.query.sessionToken) || "").trim() ||
+    String((req.body && req.body.sessionToken) || "").trim();
+
+  if (!sessionToken) throw new Error("Missing sessionToken (usa ?sessionToken=... o body.sessionToken)");
+
+  const payload = verifyToken_(sessionToken);
   return { user: payload };
 }
 

@@ -55,7 +55,8 @@ function sendEmailViaOutlook_(toEmail, otp) {
     throw new Error("CONFIG.EMAIL.OUTLOOK_FLOW_URL está vacío");
   }
 
-  const payload = {
+  // Payload base del email
+  const basePayload = {
     to: toEmail,
     subject: "Tu código de acceso (OTP) - Partner Onboarding",
     htmlBody: `<p>Tu código es: <b style="font-size:18px">${otp}</b></p>
@@ -64,11 +65,20 @@ function sendEmailViaOutlook_(toEmail, otp) {
     ttlMinutes: CONFIG.OTP.TTL_MINUTES,
   };
 
+  // ✅ CRÍTICO: incluir secret en el BODY para que Power Automate lo pueda validar
+  // Usa helper de Config.gs. Si no existiera, hacemos fallback.
+  const payload = (typeof buildOutlookFlowPayload_ === "function")
+    ? buildOutlookFlowPayload_(basePayload)
+    : Object.assign({}, basePayload, { secret: CONFIG.EMAIL.OUTLOOK_FLOW_SECRET });
+
   const res = UrlFetchApp.fetch(CONFIG.EMAIL.OUTLOOK_FLOW_URL, {
     method: "post",
     contentType: "application/json",
     payload: JSON.stringify(payload),
     muteHttpExceptions: true,
+
+    // (Opcional) dejamos también el header por compatibilidad/extra seguridad,
+    // pero el condition de PA debe mirar el body.secret
     headers: {
       "x-flow-secret": CONFIG.EMAIL.OUTLOOK_FLOW_SECRET || "",
     },
@@ -78,6 +88,8 @@ function sendEmailViaOutlook_(toEmail, otp) {
   if (code < 200 || code >= 300) {
     throw new Error(`Error enviando OTP vía Outlook Flow. HTTP ${code}: ${res.getContentText()}`);
   }
+
+  return { ok: true };
 }
 
 function generateOtp_() {

@@ -157,3 +157,103 @@ function auditLog_(entry) {
     entry.CorrelationId,
   ]);
 }
+// ===== IonConnections DB Helpers =====
+
+function ionSheet_() {
+  return getSheet_("IonConnections"); // usa tu helper getSheet_()
+}
+
+function ionConnFindByOrg_(orgId) {
+  orgId = String(orgId || "").trim();
+  if (!orgId) return null;
+
+  const sh = ionSheet_();
+  const values = sh.getDataRange().getValues();
+  const headers = values[0];
+  const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
+
+  for (let r = 1; r < values.length; r++) {
+    if (String(values[r][idx.orgId]) === orgId) {
+      return { row: r + 1, data: rowToObj_(headers, values[r]) };
+    }
+  }
+  return null;
+}
+
+function ionConnUpsert_(orgId, patch) {
+  const sh = ionSheet_();
+  const now = now_(); // tu helper
+
+  const existing = ionConnFindByOrg_(orgId);
+  if (!existing) {
+    const connectionId = `IONCONN-${Utilities.getUuid()}`;
+    const rowObj = Object.assign({
+      connectionId,
+      orgId,
+      createdAt: now,
+      updatedAt: now,
+      ionHostname: "",
+      ionAccountId: "",
+      tokenCiphertext: "",
+      tokenLast4: "",
+      status: "needs_reauth",
+      lastValidatedAt: "",
+      lastError: "",
+    }, patch || {});
+
+    appendRowByHeaders_(sh, rowObj); // si no tienes, lo hacemos luego
+    return { action: "insert", connectionId };
+  }
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
+
+  const updates = Object.assign({}, patch || {}, { updatedAt: now });
+  Object.keys(updates).forEach((key) => {
+    if (idx[key] == null) return;
+    sh.getRange(existing.row, idx[key] + 1).setValue(updates[key]);
+  });
+
+  return { action: "update", connectionId: existing.data.connectionId };
+}
+
+function rowToObj_(headers, row) {
+  const obj = {};
+  headers.forEach((h, i) => obj[h] = row[i]);
+  return obj;
+}
+function ionLock_(orgId) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000); // 20s
+  return lock;
+}
+/**
+ * appendRowByHeaders_(sheet, obj)
+ * - Lee headers en fila 1
+ * - Construye una nueva fila alineada a esos headers
+ * - Si un header no está en obj, deja ""
+ */
+function appendRowByHeaders_(sheet, obj) {
+  if (!sheet) throw new Error("appendRowByHeaders_: sheet requerido");
+  obj = obj || {};
+
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < 1) throw new Error("appendRowByHeaders_: sheet sin columnas");
+
+  const headers = sheet
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map(h => String(h).trim());
+
+  const hasAnyHeader = headers.some(h => !!h);
+  if (!hasAnyHeader) {
+    throw new Error("appendRowByHeaders_: la fila 1 no tiene headers (nombres de columnas)");
+  }
+
+  const row = headers.map(h =>
+    Object.prototype.hasOwnProperty.call(obj, h) ? obj[h] : ""
+  );
+
+  sheet.appendRow(row);
+  return { ok: true, row: sheet.getLastRow() };
+}

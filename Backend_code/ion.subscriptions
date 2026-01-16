@@ -1,0 +1,82 @@
+/**
+ * ION - Subscriptions API - CORREGIDO
+ * Filtra parámetros internos (path, sessionToken) que no deben ir a ION
+ */
+
+function ionSubscriptions_(req, user) {
+  const orgId = getOrgIdForIon_(user);
+
+  // ✅ CORRECCIÓN: Filtrar SOLO los parámetros relevantes para ION
+  // Eliminar parámetros internos del router (path, sessionToken, callback)
+  const rawQuery = (req && req.query) ? req.query : {};
+  const cleanQuery = {};
+  
+  // Lista de parámetros que son del router y NO deben ir a ION
+  const internalParams = new Set(['path', 'sessionToken', 'token', 'callback']);
+  
+  Object.keys(rawQuery).forEach(k => {
+    if (!internalParams.has(k)) {
+      cleanQuery[k] = rawQuery[k];
+    }
+  });
+
+  // Normalizar params (acepta camelCase o snake_case desde UI/Postman)
+  const q = ionNormalizeSubscriptionsQuery_(cleanQuery);
+
+  // Defaults razonables de paginación
+  if (q["pagination.limit"] == null || q["pagination.limit"] === "") {
+    q["pagination.limit"] = "50";
+  }
+  if (q["pagination.offset"] == null || q["pagination.offset"] === "") {
+    q["pagination.offset"] = "0";
+  }
+
+  // Usar el wrapper que maneja todo
+  const result = ionRequest_(orgId, "GET", "/subscriptions", { query: q });
+
+  return {
+    ok: true,
+    orgId,
+    count: Array.isArray(result.data && result.data.items) ? result.data.items.length : undefined,
+    data: result.data,
+  };
+}
+
+/**
+ * Normaliza claves de query para /subscriptions
+ */
+function ionNormalizeSubscriptionsQuery_(q) {
+  const out = {};
+  const src = q || {};
+
+  const map = {
+    "reseller_id": "resellerId",
+    "provider_id": "providerId",
+    "subscription_status": "subscriptionStatus",
+    "billing_term": "billingTerm",
+    "billing_cycle": "billingCycle",
+    "total_license": "totalLicense",
+    "ccp_product_id": "ccpProductId",
+    "provider_product_id": "providerProductId",
+    "customer_po": "customerPo",
+    "reseller_po": "resellerPo",
+    "cloud_provider_name": "cloudProviderName",
+    "account_name": "accountName",
+    "customer_name": "customerName",
+    "subscription_name": "subscriptionName",
+    "pagination_limit": "pagination.limit",
+    "pagination_offset": "pagination.offset",
+    "pagination_filter": "pagination.filter",
+    "pagination_sort_by": "pagination.sortBy",
+    "pagination_sort_order": "pagination.sortOrder",
+    "pagination_user_id": "pagination.userId",
+  };
+
+  Object.keys(src).forEach((k) => {
+    const v = src[k];
+    const kk = map[k] || k;
+    out[kk] = v;
+  });
+
+  return out;
+}

@@ -75,13 +75,16 @@ function unescapeGasInit_(input: string): string {
 function buildGasUrl(request: NextRequest): { url: string } {
   const searchParams = request.nextUrl.searchParams;
   const pathParam = searchParams.get("path") ?? "/";
-  const token = searchParams.get("token");
   const baseUrl = getGasBaseUrl();
 
   let url = `${baseUrl}?path=${encodeURIComponent(pathParam)}`;
-  if (token) {
-    url += `&token=${encodeURIComponent(token)}`;
-  }
+
+  // Forward all query params except 'path' (already handled above)
+  searchParams.forEach((value, key) => {
+    if (key !== "path") {
+      url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    }
+  });
 
   return { url };
 }

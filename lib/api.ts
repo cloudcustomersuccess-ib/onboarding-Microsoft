@@ -3,6 +3,9 @@ import {
   OnboardingDetailResponse,
   VerifyOtpResponse,
   ApiErrorResponse,
+  IonSubscriptionsResponse,
+  IonOrdersResponse,
+  IonOrderDetailResponse,
 } from "@/types";
 
 // Configuration
@@ -89,12 +92,28 @@ function unescapeGasInit_(input: string): string {
 
 /**
  * Build URL for GAS endpoint
+ * @param path - The API path (without query string for ION endpoints)
+ * @param token - Session token (sent as 'token' for legacy endpoints, 'sessionToken' for ION)
+ * @param extraParams - Additional query parameters to append
  */
-function buildUrl(path: string, token?: string): string {
+function buildUrl(
+  path: string,
+  token?: string,
+  extraParams?: Record<string, string>
+): string {
+  // Determine token parameter name based on endpoint type
+  const isIonEndpoint = path.startsWith("/integrations/ion/");
+  const tokenParam = isIonEndpoint ? "sessionToken" : "token";
+
   if (USE_PROXY) {
     let url = `/api/gas?path=${encodeURIComponent(path)}`;
     if (token) {
-      url += `&token=${encodeURIComponent(token)}`;
+      url += `&${tokenParam}=${encodeURIComponent(token)}`;
+    }
+    if (extraParams) {
+      Object.entries(extraParams).forEach(([key, value]) => {
+        url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+      });
     }
     return url;
   }
@@ -102,7 +121,12 @@ function buildUrl(path: string, token?: string): string {
   const baseUrl = getGasBaseUrl();
   let url = `${baseUrl}?path=${encodeURIComponent(path)}`;
   if (token) {
-    url += `&token=${encodeURIComponent(token)}`;
+    url += `&${tokenParam}=${encodeURIComponent(token)}`;
+  }
+  if (extraParams) {
+    Object.entries(extraParams).forEach(([key, value]) => {
+      url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    });
   }
   return url;
 }
@@ -114,9 +138,10 @@ async function apiRequest<T>(
   path: string,
   method: "GET" | "POST" | "DELETE" = "GET",
   token?: string,
-  body?: any
+  body?: any,
+  extraParams?: Record<string, string>
 ): Promise<T> {
-  const url = buildUrl(path, token);
+  const url = buildUrl(path, token, extraParams);
 
   const options: RequestInit = {
     method,
@@ -286,5 +311,115 @@ export async function submitAwsRegistration(
       userEmail,
       data,
     }
+  );
+}
+
+/**
+ * ION Subscriptions: List with filters
+ */
+export interface IonSubscriptionFilters {
+  subscriptionStatus?: "ACTIVE" | "CANCELLED" | "PENDING" | "EXPIRED" | "DISABLED" | "PAUSED";
+  cloudProviderName?: string;
+  customerId?: string;
+  customerName?: string;
+  billingCycle?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listIonSubscriptions(
+  token: string,
+  filters: IonSubscriptionFilters = {}
+): Promise<IonSubscriptionsResponse> {
+  const extraParams: Record<string, string> = {
+    "pagination.limit": String(filters.limit || 50),
+    "pagination.offset": String(filters.offset || 0),
+  };
+
+  if (filters.subscriptionStatus) {
+    extraParams.subscriptionStatus = filters.subscriptionStatus;
+  }
+  if (filters.cloudProviderName) {
+    extraParams.cloudProviderName = filters.cloudProviderName;
+  }
+  if (filters.customerId) {
+    extraParams.customerId = filters.customerId;
+  }
+  if (filters.customerName) {
+    extraParams.customerName = filters.customerName;
+  }
+  if (filters.billingCycle) {
+    extraParams.billingCycle = filters.billingCycle;
+  }
+
+  return apiRequest<IonSubscriptionsResponse>(
+    "/integrations/ion/subscriptions",
+    "GET",
+    token,
+    undefined,
+    extraParams
+  );
+}
+
+/**
+ * ION Orders: List with filters
+ */
+export interface IonOrderFilters {
+  status?: "NEW" | "CONFIRMED" | "ON_HOLD" | "COMPLETED" | "ERROR" | "CANCELED" | "IN_PROGRESS";
+  pageSize?: number;
+  pageToken?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export async function listIonOrders(
+  token: string,
+  filters: IonOrderFilters = {}
+): Promise<IonOrdersResponse> {
+  const extraParams: Record<string, string> = {
+    pageSize: String(filters.pageSize || 50),
+  };
+
+  if (filters.status) {
+    extraParams.status = filters.status;
+  }
+  if (filters.pageToken) {
+    extraParams.pageToken = filters.pageToken;
+  }
+  if (filters.sortBy) {
+    extraParams.sortBy = filters.sortBy;
+  }
+  if (filters.sortOrder) {
+    extraParams.sortOrder = filters.sortOrder;
+  }
+
+  return apiRequest<IonOrdersResponse>(
+    "/integrations/ion/orders",
+    "GET",
+    token,
+    undefined,
+    extraParams
+  );
+}
+
+/**
+ * ION Orders: Get Order Detail
+ */
+export async function getIonOrderDetail(
+  token: string,
+  customerId: string,
+  orderId: string
+): Promise<IonOrderDetailResponse> {
+  const extraParams: Record<string, string> = {
+    customerId,
+    orderId,
+  };
+
+  return apiRequest<IonOrderDetailResponse>(
+    "/integrations/ion/orders/detail",
+    "GET",
+    token,
+    undefined,
+    extraParams
   );
 }

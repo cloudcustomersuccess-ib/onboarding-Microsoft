@@ -1,0 +1,94 @@
+/**
+ * ION Wrapper: construye URL + asegura access token + fetch + parse + retry 401 una vez
+ *
+ * Convención:
+ *  - path: "/subscriptions" (sin /api/v3/accounts/...)
+ *  - wrapper añade: https://{hostname}/api/v3/accounts/{accountId}{path}
+ */
+
+function ionRequest_(orgId, method, path, opts) {
+  opts = opts || {};
+  method = String(method || "GET").toUpperCase();
+  path = String(path || "").trim();
+  if (!path.startsWith("/")) path = "/" + path;
+
+  const existing = ionConnFindByOrg_(orgId);
+  if (!existing || !existing.data) throw new Error("ION: conexión no encontrada (reconectar)");
+  const conn = existing.data;
+
+  if (String(conn.status || "") !== "connected") {
+    throw new Error(`ION: status=${conn.status || "unknown"} (reconectar)`);
+  }
+
+  const hostname = String(conn.ionHostname || "").trim();
+  const accountId = String(conn.ionAccountId || "").trim();
+  if (!hostname) throw new Error("ION: falta ionHostname (configurar)");
+  if (!accountId) throw new Error("ION: falta ionAccountId (configurar)");
+
+  const access = ionEnsureAccessToken_(orgId);
+
+  // Querystring
+  const query = opts.query || {};
+  const qs = Object.keys(query).length
+    ? "?" + Object.keys(query)
+        .filter(k => query[k] !== undefined && query[k] !== null && String(query[k]) !== "")
+        .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(String(query[k]))}`)
+        .join("&")
+    : "";
+
+  const url = `https://${hostname}/api/v3/accounts/${encodeURIComponent(accountId)}${path}${qs}`;
+
+  // Body
+  let payload;
+  let contentType;
+  if (opts.body !== undefined) {
+    payload = JSON.stringify(opts.body);
+    contentType = "application/json";
+  }
+
+  const doFetch = (token) => UrlFetchApp.fetch(url, {
+    method: method.toLowerCase(),
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+    ...(contentType ? { contentType } : {}),
+    ...(payload ? { payload } : {}),
+  });
+
+  // 1) Intento normal
+  let res = doFetch(access);
+  let code = res.getResponseCode();
+  let text = res.getContentText() || "";
+
+  // 2) Si 401/403: refresca y reintenta 1 vez
+  if (code === 401 || code === 403) {
+    const access2 = ionEnsureAccessToken_(orgId); // fuerza refresh si expira
+    res = doFetch(access2);
+    code = res.getResponseCode();
+    text = res.getContentText() || "";
+  }
+
+  // Parse JSON si se puede
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); }
+    catch (_) { data = text; }
+  }
+
+  // Error handling
+  if (code < 200 || code >= 300) {
+    // Guarda error “limpio”
+    ionConnUpsert_(orgId, {
+      lastError: `ION ${method} ${path} failed (HTTP ${code}). ${safeIonErr_(text)}`,
+      lastValidatedAt: now_(),
+    });
+    throw new Error(`ION request failed (HTTP ${code}). ${safeIonErr_(text)}`);
+  }
+
+  // Marca uso
+  ionConnUpsert_(orgId, { lastUsedAt: now_(), lastError: "" });
+
+  return { http: code, data };
+}
