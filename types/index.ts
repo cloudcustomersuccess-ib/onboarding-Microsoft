@@ -104,6 +104,99 @@ export interface IonSubscriptionsResponse {
   error?: string;
 }
 
+// ION Customer types
+export interface IonCustomer {
+  customerId?: string;
+  customerName?: string;
+  customerStatus?: string;
+  [key: string]: any;
+}
+
+export interface IonCustomersResponse {
+  ok: boolean;
+  orgId?: string;
+  count?: number;
+  data?: {
+    customers: IonCustomer[];
+    nextPageToken?: string | null;
+  };
+  error?: string;
+}
+
+// ION Report types
+export interface IonReportColumn {
+  id?: string;
+  columnTemplateId?: string;
+  displayName?: string;
+  [key: string]: any;
+}
+
+export interface IonReportSpecs {
+  allColumns?: IonReportColumn[];
+  selectedColumns?: IonReportColumn[];
+  columnFilters?: any[];
+  dateRangeOption?: any;
+  currencyOption?: any;
+  rowsLimit?: string | number;
+  [key: string]: any;
+}
+
+export interface IonReport {
+  reportId?: string;
+  reportTemplateId?: string;
+  reportModule?: string;
+  displayName?: string;
+  specs?: IonReportSpecs;
+  [key: string]: any;
+}
+
+export interface IonReportsResponse {
+  ok: boolean;
+  orgId?: string;
+  data?: {
+    reports: IonReport[];
+  };
+  error?: string;
+}
+
+export interface IonReportResponse {
+  ok: boolean;
+  orgId?: string;
+  report?: IonReport | null;
+  error?: string;
+}
+
+export interface IonReportValue {
+  valueType?: string;
+  stringValue?: string;
+  floatValue?: number;
+  intValue?: number;
+  moneyValue?: {
+    currency?: string;
+    value?: number;
+  };
+  [key: string]: any;
+}
+
+export interface IonReportRow {
+  values?: IonReportValue[];
+  [key: string]: any;
+}
+
+export interface IonReportDataResponse {
+  ok: boolean;
+  orgId?: string;
+  data?: {
+    report?: IonReport;
+    data?: {
+      rows?: IonReportRow[];
+      [key: string]: any;
+    };
+    [key: string]: any;
+  };
+  error?: string;
+}
+
 // ION Order types
 export type IonOrderStatus =
   | "NEW"

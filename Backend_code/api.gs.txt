@@ -27,8 +27,16 @@ function apiHandle_(req) {
   if (path === "/integrations/ion/connect") return respond_(req, ionConnect_(req, user));
   if (path === "/integrations/ion/ping") return respond_(req, ionPing_(req, user));
   if (path === "/integrations/ion/subscriptions") return respond_(req, ionSubscriptions_(req, user));
+  if (path === "/integrations/ion/customers") return respond_(req, ionCustomers_(req, user));
   if (path === "/integrations/ion/orders") return respond_(req, ionOrders_(req, user));
   if (path === "/integrations/ion/orders/detail") return respond_(req, ionOrderDetail_(req, user));
+  if (path === "/integrations/ion/reports") return respond_(req, ionReports_(req, user));
+
+  const r1 = path.match(/^\/integrations\/ion\/reports\/([^\/]+)$/);
+  if (r1) return respond_(req, ionReportMetadata_(req, user, decodeURIComponent(r1[1])));
+
+  const r2 = path.match(/^\/integrations\/ion\/reports\/([^\/]+)\/data$/);
+  if (r2) return respond_(req, ionReportData_(req, user, decodeURIComponent(r2[1])));
 
 
   if (path === "/onboardings") return respond_(req, listOnboardings_(user));

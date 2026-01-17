@@ -6,6 +6,10 @@ import {
   IonSubscriptionsResponse,
   IonOrdersResponse,
   IonOrderDetailResponse,
+  IonCustomersResponse,
+  IonReportsResponse,
+  IonReportResponse,
+  IonReportDataResponse,
 } from "@/types";
 
 // Configuration
@@ -362,6 +366,52 @@ export async function listIonSubscriptions(
 }
 
 /**
+ * ION Customers: List with filters
+ */
+export interface IonCustomerFilters {
+  customerStatus?: "ACTIVE" | "INACTIVE" | "CUSTOMER_STATUS_UNSPECIFIED";
+  customerEmail?: string;
+  languageCode?: string;
+  customerName?: string;
+  pageSize?: number;
+  pageToken?: string;
+}
+
+export async function listIonCustomers(
+  token: string,
+  filters: IonCustomerFilters = {}
+): Promise<IonCustomersResponse> {
+  const extraParams: Record<string, string> = {};
+
+  if (filters.pageSize) {
+    extraParams.pageSize = String(filters.pageSize);
+  }
+  if (filters.pageToken) {
+    extraParams.pageToken = filters.pageToken;
+  }
+  if (filters.customerStatus) {
+    extraParams["filter.customerStatus"] = filters.customerStatus;
+  }
+  if (filters.customerEmail) {
+    extraParams["filter.customerEmail"] = filters.customerEmail;
+  }
+  if (filters.languageCode) {
+    extraParams["filter.languageCode"] = filters.languageCode;
+  }
+  if (filters.customerName) {
+    extraParams["filter.customerName"] = filters.customerName;
+  }
+
+  return apiRequest<IonCustomersResponse>(
+    "/integrations/ion/customers",
+    "GET",
+    token,
+    undefined,
+    extraParams
+  );
+}
+
+/**
  * ION Orders: List with filters
  */
 export interface IonOrderFilters {
@@ -421,5 +471,68 @@ export async function getIonOrderDetail(
     token,
     undefined,
     extraParams
+  );
+}
+
+/**
+ * ION Reports: List
+ */
+export interface IonReportsFilters {
+  module?: string;
+}
+
+export async function listIonReports(
+  token: string,
+  filters: IonReportsFilters = {}
+): Promise<IonReportsResponse> {
+  const extraParams: Record<string, string> = {};
+  if (filters.module) {
+    extraParams.module = filters.module;
+  }
+
+  return apiRequest<IonReportsResponse>(
+    "/integrations/ion/reports",
+    "GET",
+    token,
+    undefined,
+    extraParams
+  );
+}
+
+/**
+ * ION Reports: Get Metadata
+ */
+export async function getIonReport(
+  token: string,
+  reportId: string,
+  includeMetadata?: boolean
+): Promise<IonReportResponse> {
+  const extraParams: Record<string, string> = {};
+  if (typeof includeMetadata === "boolean") {
+    extraParams.includeMetadata = String(includeMetadata);
+  }
+
+  return apiRequest<IonReportResponse>(
+    `/integrations/ion/reports/${encodeURIComponent(reportId)}`,
+    "GET",
+    token,
+    undefined,
+    extraParams
+  );
+}
+
+/**
+ * ION Reports: Get Data
+ */
+export async function getIonReportData(
+  token: string,
+  reportId: string,
+  report: any
+): Promise<IonReportDataResponse> {
+  return apiRequest<IonReportDataResponse>(
+    `/integrations/ion/reports/${encodeURIComponent(reportId)}/data`,
+    "POST",
+    token,
+    report
   );
 }
