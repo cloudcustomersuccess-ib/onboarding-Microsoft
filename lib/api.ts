@@ -357,6 +357,32 @@ export async function submitAwsRegistration(
 }
 
 /**
+ * ION: Connect (refresh token)
+ */
+export async function connectIon(
+  sessionToken: string,
+  payload: {
+    ionHostname: string;
+    ionAccountId: string;
+    ionToken: string;
+  }
+): Promise<any> {
+  return apiRequest<any>(
+    "/integrations/ion/connect",
+    "POST",
+    sessionToken,
+    payload
+  );
+}
+
+/**
+ * ION: Ping connection status
+ */
+export async function pingIon(sessionToken: string): Promise<any> {
+  return apiRequest<any>("/integrations/ion/ping", "GET", sessionToken);
+}
+
+/**
  * ION Subscriptions: List with filters
  */
 export interface IonSubscriptionFilters {

@@ -180,6 +180,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       icon: <RocketOutlined />,
       label: "Growth News",
     },
+    {
+      key: "/settings/ion",
+      icon: <SettingOutlined />,
+      label: "Settings - ION",
+    },
   ];
 
   const getSelectedKey = () => {
