@@ -503,19 +503,24 @@ export async function listIonReports(
 
 /**
  * ION Reports: Get Metadata
+ * ✅ CORREGIDO - Ahora usa el endpoint correcto
  */
 export async function getIonReport(
   token: string,
   reportId: string,
   includeMetadata?: boolean
 ): Promise<IonReportResponse> {
-  const extraParams: Record<string, string> = {};
+  const extraParams: Record<string, string> = {
+    reportId, // ✅ Pasar reportId como query param
+  };
+  
   if (typeof includeMetadata === "boolean") {
     extraParams.includeMetadata = String(includeMetadata);
   }
 
+  // ✅ CORRECCIÓN: Endpoint correcto es /reports/metadata, NO /reports/{reportId}
   return apiRequest<IonReportResponse>(
-    `/integrations/ion/reports/${encodeURIComponent(reportId)}`,
+    "/integrations/ion/reports/metadata",
     "GET",
     token,
     undefined,
@@ -525,16 +530,22 @@ export async function getIonReport(
 
 /**
  * ION Reports: Get Data
+ * ✅ CORREGIDO - Ahora usa el endpoint correcto
  */
 export async function getIonReportData(
   token: string,
   reportId: string,
   report: any
 ): Promise<IonReportDataResponse> {
+  // ✅ CORRECCIÓN: Endpoint correcto es /reports/data con POST body
+  // El reportId va en el body, NO en la URL
   return apiRequest<IonReportDataResponse>(
-    `/integrations/ion/reports/${encodeURIComponent(reportId)}/data`,
+    "/integrations/ion/reports/data",
     "POST",
     token,
-    report
+    {
+      reportId, // ✅ reportId en el body
+      report,   // ✅ report config en el body
+    }
   );
 }
