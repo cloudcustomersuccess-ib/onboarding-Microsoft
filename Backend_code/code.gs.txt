@@ -13,14 +13,21 @@ function doPost(e) {
 }
 
 function handle_(e, method) {
+  let req;
   try {
-    const req = normalizeRequest_(e, method);
+    req = normalizeRequest_(e, method);
     return apiHandle_(req);
   } catch (err) {
     const obj = { error: String(err && (err.message || err)) };
 
-    // ✅ ROBUSTO: HtmlService evita el 302 de ContentService
-    return HtmlService.createHtmlOutput(JSON.stringify(obj));
+    // NOTE: HtmlService avoids the 302 redirect from ContentService.
+    if (typeof respond_ === "function" && req) {
+      return respond_(req, obj, 500);
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify(obj))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 

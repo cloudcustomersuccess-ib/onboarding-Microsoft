@@ -7,7 +7,7 @@ function ionCustomers_(req, user) {
 
   const rawQuery = (req && req.query) ? req.query : {};
   const cleanQuery = {};
-  const internalParams = new Set(["path", "sessionToken", "token", "callback"]);
+  const internalParams = new Set(["path", "sessionToken", "token", "callback", "format"]);
 
   Object.keys(rawQuery).forEach((k) => {
     if (!internalParams.has(k)) {

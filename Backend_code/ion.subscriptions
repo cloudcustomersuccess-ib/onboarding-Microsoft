@@ -12,7 +12,7 @@ function ionSubscriptions_(req, user) {
   const cleanQuery = {};
   
   // Lista de parámetros que son del router y NO deben ir a ION
-  const internalParams = new Set(['path', 'sessionToken', 'token', 'callback']);
+  const internalParams = new Set(['path', 'sessionToken', 'token', 'callback', 'format']);
   
   Object.keys(rawQuery).forEach(k => {
     if (!internalParams.has(k)) {

@@ -114,6 +114,7 @@ function buildUrl(
     if (token) {
       url += `&${tokenParam}=${encodeURIComponent(token)}`;
     }
+    url += "&format=json";
     if (extraParams) {
       Object.entries(extraParams).forEach(([key, value]) => {
         url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
@@ -127,6 +128,7 @@ function buildUrl(
   if (token) {
     url += `&${tokenParam}=${encodeURIComponent(token)}`;
   }
+  url += "&format=json";
   if (extraParams) {
     Object.entries(extraParams).forEach(([key, value]) => {
       url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;

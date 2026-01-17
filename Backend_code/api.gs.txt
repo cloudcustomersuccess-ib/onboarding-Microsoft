@@ -7,7 +7,8 @@
  */
 
 function apiHandle_(req) {
-  const path = (req.path || "/").toLowerCase();
+  const rawPath = String(req.path || "/");
+  const path = rawPath.toLowerCase();
 
   // Public endpoints
   if (path === "/auth/request-otp") return respond_(req, requestOtp_(req.body.email));
@@ -32,25 +33,25 @@ function apiHandle_(req) {
   if (path === "/integrations/ion/orders/detail") return respond_(req, ionOrderDetail_(req, user));
   if (path === "/integrations/ion/reports") return respond_(req, ionReports_(req, user));
 
-  const r1 = path.match(/^\/integrations\/ion\/reports\/([^\/]+)$/);
+  const r1 = rawPath.match(/^\/integrations\/ion\/reports\/([^\/]+)$/i);
   if (r1) return respond_(req, ionReportMetadata_(req, user, decodeURIComponent(r1[1])));
 
-  const r2 = path.match(/^\/integrations\/ion\/reports\/([^\/]+)\/data$/);
+  const r2 = rawPath.match(/^\/integrations\/ion\/reports\/([^\/]+)\/data$/i);
   if (r2) return respond_(req, ionReportData_(req, user, decodeURIComponent(r2[1])));
 
 
   if (path === "/onboardings") return respond_(req, listOnboardings_(user));
 
-  const m1 = path.match(/^\/onboardings\/([^\/]+)$/);
+  const m1 = rawPath.match(/^\/onboardings\/([^\/]+)$/i);
   if (m1) return respond_(req, getOnboardingDetail_(user, decodeURIComponent(m1[1])));
 
-  const m2 = path.match(/^\/onboardings\/([^\/]+)\/fields$/);
+  const m2 = rawPath.match(/^\/onboardings\/([^\/]+)\/fields$/i);
   if (m2) {
     const clienteId = decodeURIComponent(m2[1]);
     return respond_(req, updateField_(user, clienteId, req.body.fieldKey, req.body.value));
   }
 
-  const m3 = path.match(/^\/onboardings\/([^\/]+)\/notes$/);
+  const m3 = rawPath.match(/^\/onboardings\/([^\/]+)\/notes$/i);
   if (m3) {
     const clienteId = decodeURIComponent(m3[1]);
     return respond_(req, addNote_(user, clienteId, req.body));
@@ -74,17 +75,6 @@ function getAuth_(req) {
   return { user: payload };
 }
 
-function getAuth_(req) {
-  const sessionToken =
-    String((req.query && req.query.sessionToken) || "").trim() ||
-    String((req.body && req.body.sessionToken) || "").trim();
-
-  if (!sessionToken) throw new Error("Missing sessionToken (usa ?sessionToken=... o body.sessionToken)");
-
-  const payload = verifyToken_(sessionToken);
-  return { user: payload };
-}
-
 /**
  * Respuesta JSON o JSONP (si viene ?callback=...)
  * ✅ ROBUSTO: usamos HtmlService para evitar el 302 redirect que aparece con ContentService
@@ -93,6 +83,11 @@ function getAuth_(req) {
  * Nota: HtmlService devuelve Content-Type text/html, pero el body es JSON puro.
  * A Power Automate le sirve y evita el redirect.
  */
+function wantsJson_(req) {
+  const format = String((req.query && req.query.format) || "").trim().toLowerCase();
+  return format === "json" || format === "raw";
+}
+
 function respond_(req, obj, status) {
   status = status || 200; // (Apps Script Web App no permite setear status fácilmente con HtmlService)
 
@@ -103,7 +98,14 @@ function respond_(req, obj, status) {
     return HtmlService.createHtmlOutput(js);
   }
 
-  return HtmlService.createHtmlOutput(JSON.stringify(obj));
+  const json = JSON.stringify(obj);
+  if (wantsJson_(req)) {
+    return ContentService
+      .createTextOutput(json)
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return HtmlService.createHtmlOutput(json);
 }
 
 /* =========================
