@@ -16,8 +16,18 @@ import type { IonReport, IonReportColumn, IonReportRow, IonReportValue } from "@
 
 const { Title } = Typography;
 
-const CUSTOMER_COST_COLUMN_HINT = "customer_cost";
+// ✅ CORREGIDO: Buscar múltiples términos, no solo "customer_cost"
+const COST_COLUMN_HINTS = ["customer_cost", "cost", "billing", "amount", "charge", "total", "price"];
 const DEFAULT_CUSTOMERS_PAGE_SIZE = 200;
+
+// ✅ CORREGIDO: Priorizar reports de billing
+const PREFERRED_REPORT_NAMES = [
+  "Microsoft CSP Billing Customers Report",
+  "SaaS Billing Customers Report", 
+  "AWS InLine Credits Report",
+  "Legacy Azure Billing Customers Report",
+  "Pricebooks Allocation Report"
+];
 
 type MetricsState = {
   customers: number;
@@ -85,13 +95,27 @@ export default function MicrosoftGrowthPage() {
     return Array.isArray(columns) ? (columns as IonReportColumn[]) : [];
   };
 
+  // ✅ CORREGIDO: Buscar con múltiples hints
   const findCustomerCostColumnIndex = (columns: IonReportColumn[]) => {
-    return columns.findIndex((column) => {
-      const templateId =
-        (column && (column.columnTemplateId || column.column_template_id)) ||
-        "";
-      return String(templateId).toLowerCase().includes(CUSTOMER_COST_COLUMN_HINT);
-    });
+    for (const hint of COST_COLUMN_HINTS) {
+      const index = columns.findIndex((column) => {
+        const templateId =
+          (column && (column.columnTemplateId || column.column_template_id)) || "";
+        const displayName = (column && column.displayName) || "";
+        
+        return (
+          String(templateId).toLowerCase().includes(hint) ||
+          String(displayName).toLowerCase().includes(hint)
+        );
+      });
+      
+      if (index !== -1) {
+        console.log(`Found cost column with hint "${hint}" at index ${index}`);
+        return index;
+      }
+    }
+    
+    return -1;
   };
 
   const extractNumericValue = (value?: IonReportValue) => {
@@ -184,16 +208,81 @@ export default function MicrosoftGrowthPage() {
     return response.data.pagination?.total ?? response.data.items?.length ?? 0;
   };
 
+  // ✅ CORREGIDO: Buscar primero en reports de billing preferidos
   const findCustomerCostReport = async (token: string) => {
+    console.log("1. Listing all reports...");
     const reportsResponse = await listIonReports(token);
     if (!reportsResponse.ok || !reportsResponse.data) {
       throw new Error(reportsResponse.error || "Failed to load reports");
     }
 
-    const reports = reportsResponse.data.reports || [];
-    for (const report of reports) {
+    const allReports = reportsResponse.data.reports || [];
+    console.log(`Found ${allReports.length} total reports`);
+
+    // Filtrar reports de billing
+    const billingReports = allReports.filter(r => 
+      r.category === "BILLING_REPORTS" || 
+      r.displayName?.toLowerCase().includes("billing") ||
+      r.displayName?.toLowerCase().includes("cost")
+    );
+    
+    console.log(`Found ${billingReports.length} billing reports:`, 
+      billingReports.map(r => r.displayName)
+    );
+
+    // Ordenar por preferencia
+    const sortedReports = [...billingReports].sort((a, b) => {
+      const aIndex = PREFERRED_REPORT_NAMES.findIndex(name => 
+        a.displayName?.includes(name)
+      );
+      const bIndex = PREFERRED_REPORT_NAMES.findIndex(name => 
+        b.displayName?.includes(name)
+      );
+      
+      if (aIndex === -1 && bIndex === -1) return 0;
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+
+    // Intentar con reports ordenados por preferencia
+    for (const report of sortedReports) {
       const reportId = report.reportId;
       if (!reportId) continue;
+
+      console.log(`2. Checking report: ${report.displayName} (${reportId})`);
+
+      const reportResponse = await getIonReport(token, String(reportId), true);
+      if (!reportResponse.ok || !reportResponse.report) {
+        console.log(`Failed to get metadata for ${reportId}`);
+        continue;
+      }
+
+      const columns = extractColumns(reportResponse.report);
+      console.log(`Report has ${columns.length} columns:`, 
+        columns.map(c => c.displayName || c.columnTemplateId)
+      );
+      
+      const costIndex = findCustomerCostColumnIndex(columns);
+      if (costIndex !== -1) {
+        console.log(`✅ Found report with cost column: ${report.displayName}`);
+        return { report: reportResponse.report, costIndex };
+      } else {
+        console.log(`❌ No cost column found in ${report.displayName}`);
+      }
+    }
+
+    // Si no encontramos en billing reports, buscar en todos
+    console.log("3. No cost column found in billing reports, trying all reports...");
+    
+    for (const report of allReports) {
+      const reportId = report.reportId;
+      if (!reportId) continue;
+      
+      // Saltar los que ya revisamos
+      if (billingReports.some(br => br.reportId === report.reportId)) {
+        continue;
+      }
 
       const reportResponse = await getIonReport(token, String(reportId), true);
       if (!reportResponse.ok || !reportResponse.report) {
@@ -203,11 +292,15 @@ export default function MicrosoftGrowthPage() {
       const columns = extractColumns(reportResponse.report);
       const costIndex = findCustomerCostColumnIndex(columns);
       if (costIndex !== -1) {
+        console.log(`✅ Found report with cost column: ${report.displayName}`);
         return { report: reportResponse.report, costIndex };
       }
     }
 
-    throw new Error("No report with customer cost data found");
+    throw new Error(
+      "No report with customer cost data found. Available billing reports: " +
+      billingReports.map(r => r.displayName).join(", ")
+    );
   };
 
   const fetchCustomerCostForRange = async (
@@ -277,6 +370,7 @@ export default function MicrosoftGrowthPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load growth metrics";
       setError(formatIonError(message));
+      console.error("Error loading metrics:", err);
     } finally {
       setLoading(false);
     }
