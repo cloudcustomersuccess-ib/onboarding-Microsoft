@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GAS_BASE_URL = process.env.NEXT_PUBLIC_GAS_BASE_URL;
+// ✅ Recomendado: en server puedes usar una env NO pública.
+// Si aún no la tienes, esto mantiene compatibilidad con NEXT_PUBLIC_GAS_BASE_URL.
+const GAS_BASE_URL =
+  process.env.GAS_BASE_URL || process.env.NEXT_PUBLIC_GAS_BASE_URL;
 
 function getGasBaseUrl(): string {
   if (!GAS_BASE_URL) {
     throw new Error(
-      "NEXT_PUBLIC_GAS_BASE_URL is required. Set it in your environment."
+      "GAS_BASE_URL (recommended) or NEXT_PUBLIC_GAS_BASE_URL is required. Set it in your environment."
     );
   }
   if (GAS_BASE_URL.startsWith("/")) {
-    throw new Error(
-      "NEXT_PUBLIC_GAS_BASE_URL must be an absolute URL, not a relative path."
-    );
+    throw new Error("GAS_BASE_URL must be an absolute URL, not a relative path.");
   }
   return GAS_BASE_URL;
 }
@@ -19,15 +20,26 @@ function getGasBaseUrl(): string {
 async function parseGasJson(response: Response) {
   const text = await response.text();
   const snippet = text.slice(0, 200);
+  const trimmed = text.trim();
 
   try {
-    if (text.trim().startsWith("<!doctype html") || text.trim().startsWith("<html")) {
-      const extracted = extractJsonFromGASHtml(text);
-      if (extracted) {
-        return extracted;
-      }
+    // 1) Si viene HTML, intenta extraer JSON de varias formas
+    if (trimmed.startsWith("<!doctype html") || trimmed.startsWith("<html")) {
+      const extracted =
+        extractJsonFromGASHtml(text) ??
+        extractFirstJsonObject(text) ??
+        extractJsonp(text);
+
+      if (extracted != null) return extracted;
+
+      throw new Error(`Invalid JSON response. Snippet: ${snippet}`);
     }
 
+    // 2) JSONP (callback({...}))
+    const jsonp = extractJsonp(trimmed);
+    if (jsonp != null) return jsonp;
+
+    // 3) JSON normal
     return JSON.parse(text);
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -39,22 +51,46 @@ async function parseGasJson(response: Response) {
 
 function extractJsonFromGASHtml(text: string): unknown | null {
   const initMatch = text.match(/goog\.script\.init\("([\s\S]*?)",\s*""/);
-  if (!initMatch) {
-    return null;
-  }
+  if (!initMatch) return null;
 
   const decodedInit = unescapeGasInit_(initMatch[1]);
+
   try {
     const initJson = JSON.parse(decodedInit);
-    const userHtml = typeof initJson.userHtml === "string" ? initJson.userHtml : "";
-    if (!userHtml) {
-      return null;
-    }
+    const userHtml =
+      typeof initJson.userHtml === "string" ? initJson.userHtml : "";
+    if (!userHtml) return null;
+
     try {
       return JSON.parse(userHtml);
     } catch {
       return { error: userHtml };
     }
+  } catch {
+    return null;
+  }
+}
+
+// ✅ “Plan B” cuando no existe goog.script.init: extrae el primer { ... } grande del HTML
+function extractFirstJsonObject(text: string): unknown | null {
+  const first = text.indexOf("{");
+  const last = text.lastIndexOf("}");
+  if (first === -1 || last === -1 || last <= first) return null;
+
+  const candidate = text.slice(first, last + 1).trim();
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+}
+
+// ✅ JSONP: callback(<json>)
+function extractJsonp(text: string): unknown | null {
+  const m = text.match(/^[\w$.]+\(([\s\S]*)\);?\s*$/);
+  if (!m) return null;
+  try {
+    return JSON.parse(m[1]);
   } catch {
     return null;
   }
@@ -79,7 +115,12 @@ function buildGasUrl(request: NextRequest): { url: string } {
 
   let url = `${baseUrl}?path=${encodeURIComponent(pathParam)}`;
 
-  // Forward all query params except 'path' (already handled above)
+  // ✅ Forzar format=json siempre (si el caller no lo pasa)
+  if (!searchParams.has("format")) {
+    url += `&format=json`;
+  }
+
+  // Forward all query params except 'path' (ya lo hemos puesto arriba)
   searchParams.forEach((value, key) => {
     if (key !== "path") {
       url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
@@ -92,8 +133,12 @@ function buildGasUrl(request: NextRequest): { url: string } {
 export async function GET(request: NextRequest) {
   try {
     const { url } = buildGasUrl(request);
+
     const response = await fetch(url, {
       method: "GET",
+      // ✅ importante: no cachear respuestas
+      cache: "no-store",
+      redirect: "follow",
       headers: {
         "Content-Type": "application/json",
       },
@@ -103,7 +148,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(json, { status: response.status });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Proxy error" },
+      {
+        error: error instanceof Error ? error.message : "Proxy error",
+      },
       { status: 500 }
     );
   }
@@ -112,20 +159,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { url } = buildGasUrl(request);
-    const body = await request.json();
+
+    // ✅ Más robusto que request.json(): no revienta si viene vacío/no-JSON
+    const rawBody = await request.text();
+    const bodyToSend = rawBody?.length ? rawBody : "{}";
+
     const response = await fetch(url, {
       method: "POST",
+      cache: "no-store",
+      redirect: "follow",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: bodyToSend,
     });
 
     const json = await parseGasJson(response);
     return NextResponse.json(json, { status: response.status });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Proxy error" },
+      {
+        error: error instanceof Error ? error.message : "Proxy error",
+      },
       { status: 500 }
     );
   }

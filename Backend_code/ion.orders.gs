@@ -3,7 +3,6 @@
  * Endpoint para listar pedidos de StreamOne ION
  * GET /api/v3/accounts/{accountId}/orders
  */
-
 function ionOrders_(req, user) {
   const orgId = getOrgIdForIon_(user);
 

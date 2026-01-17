@@ -32,24 +32,34 @@ function getGasBaseUrl(): string {
 
 /**
  * Parse response from Google Apps Script.
- * GAS returns Content-Type: text/html but body is JSON.
+ * GAS can return Content-Type: text/html with JSON embedded.
  */
 async function parseGASResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
   const snippet = text.slice(0, 200);
 
   try {
-    if (text.trim().startsWith("<!doctype html") || text.trim().startsWith("<html")) {
-      const extracted = extractJsonFromGASHtml(text);
-      if (extracted) {
-        return extracted as T;
-      }
+    const trimmed = text.trim();
+
+    // 1) HTML wrapper -> try extract
+    if (trimmed.startsWith("<!doctype html") || trimmed.startsWith("<html")) {
+      const extracted =
+        extractJsonFromGASHtml(text) ??
+        extractFirstJsonObject(text) ??
+        extractJsonp(text);
+
+      if (extracted != null) return extracted as T;
+
+      throw new Error(`Invalid JSON response. Snippet: ${snippet}`);
     }
 
+    // 2) JSONP
+    const jsonp = extractJsonp(trimmed);
+    if (jsonp != null) return jsonp as T;
+
+    // 3) JSON normal
     const json = JSON.parse(text);
-    if (json.error) {
-      throw new Error(json.error);
-    }
+    if (json?.error) throw new Error(json.error);
     return json as T;
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -59,24 +69,56 @@ async function parseGASResponse<T>(response: Response): Promise<T> {
   }
 }
 
+/**
+ * GAS HTML wrapper extractor (goog.script.init(...))
+ */
 function extractJsonFromGASHtml(text: string): unknown | null {
   const initMatch = text.match(/goog\.script\.init\("([\s\S]*?)",\s*""/);
-  if (!initMatch) {
-    return null;
-  }
+  if (!initMatch) return null;
 
   const decodedInit = unescapeGasInit_(initMatch[1]);
+
   try {
     const initJson = JSON.parse(decodedInit);
-    const userHtml = typeof initJson.userHtml === "string" ? initJson.userHtml : "";
-    if (!userHtml) {
-      return null;
-    }
+    const userHtml =
+      typeof initJson.userHtml === "string" ? initJson.userHtml : "";
+    if (!userHtml) return null;
+
     try {
       return JSON.parse(userHtml);
     } catch {
       return { error: userHtml };
     }
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Loose extractor: grab first {...} block from a larger HTML/text response.
+ * (Works when Apps Script returns HTML but the JSON is embedded somewhere.)
+ */
+function extractFirstJsonObject(text: string): unknown | null {
+  const first = text.indexOf("{");
+  const last = text.lastIndexOf("}");
+  if (first === -1 || last === -1 || last <= first) return null;
+
+  const candidate = text.slice(first, last + 1).trim();
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * JSONP extractor: callback(<json>)
+ */
+function extractJsonp(text: string): unknown | null {
+  const m = text.match(/^[\w$.]+\(([\s\S]*)\);?\s*$/);
+  if (!m) return null;
+  try {
+    return JSON.parse(m[1]);
   } catch {
     return null;
   }
@@ -105,7 +147,6 @@ function buildUrl(
   token?: string,
   extraParams?: Record<string, string>
 ): string {
-  // Determine token parameter name based on endpoint type
   const isIonEndpoint = path.startsWith("/integrations/ion/");
   const tokenParam = isIonEndpoint ? "sessionToken" : "token";
 
@@ -156,22 +197,19 @@ async function apiRequest<T>(
     },
   };
 
-  if (method === "POST" && body) {
-    options.body = JSON.stringify(body);
+  if (method === "POST") {
+    // allow sending empty body if needed
+    options.body = JSON.stringify(body ?? {});
   }
 
-  try {
-    const response = await fetch(url, options);
+  const response = await fetch(url, options);
 
-    if (!response.ok && response.status >= 400) {
-      const errorData = await parseGASResponse<ApiErrorResponse>(response);
-      throw new Error(errorData.error || `HTTP ${response.status}`);
-    }
-
-    return await parseGASResponse<T>(response);
-  } catch (error) {
-    throw error;
+  if (!response.ok && response.status >= 400) {
+    const errorData = await parseGASResponse<ApiErrorResponse>(response);
+    throw new Error(errorData.error || `HTTP ${response.status}`);
   }
+
+  return await parseGASResponse<T>(response);
 }
 
 /**
@@ -190,13 +228,12 @@ export async function verifyOtp(
   email: string,
   otp: string
 ): Promise<VerifyOtpResponse> {
-  const response = await apiRequest<VerifyOtpResponse>(
+  return apiRequest<VerifyOtpResponse>(
     "/auth/verify-otp",
     "POST",
     undefined,
     { email, otp }
   );
-  return response;
 }
 
 /**
@@ -269,7 +306,9 @@ export async function deleteNote(
   noteId: string
 ): Promise<{ ok: boolean }> {
   return apiRequest<{ ok: boolean }>(
-    `/onboardings/${encodeURIComponent(clienteId)}/notes/${encodeURIComponent(noteId)}`,
+    `/onboardings/${encodeURIComponent(clienteId)}/notes/${encodeURIComponent(
+      noteId
+    )}`,
     "DELETE",
     token
   );
@@ -277,7 +316,7 @@ export async function deleteNote(
 
 /**
  * Forms: Submit AWS Registration Form
- * This endpoint is PUBLIC (no token required in path, but uses secret in body)
+ * Public endpoint (no token), uses secret in body
  */
 export async function submitAwsRegistration(
   secret: string,
@@ -298,22 +337,19 @@ export async function submitAwsRegistration(
     supportPlan: string;
   }
 ): Promise<{ ok: boolean; submissionId?: string }> {
-  // Validate secret exists
   if (!secret) {
     throw new Error(
       "AWS Registration Secret no configurado. Por favor configura NEXT_PUBLIC_AWS_REGISTRATION_SECRET en .env.local"
     );
   }
 
-  // Use existing apiRequest helper (matches project pattern)
-  // apiRequest sends body as JSON automatically
   return apiRequest<{ ok: boolean; submissionId?: string }>(
     "/forms/aws-registration/save",
     "POST",
-    undefined, // no token required for this public endpoint
+    undefined,
     {
       secret,
-      id: clienteId,
+      clienteId, // ✅ FIX (antes iba como "id")
       userEmail,
       data,
     }
@@ -324,7 +360,13 @@ export async function submitAwsRegistration(
  * ION Subscriptions: List with filters
  */
 export interface IonSubscriptionFilters {
-  subscriptionStatus?: "ACTIVE" | "CANCELLED" | "PENDING" | "EXPIRED" | "DISABLED" | "PAUSED";
+  subscriptionStatus?:
+    | "ACTIVE"
+    | "CANCELLED"
+    | "PENDING"
+    | "EXPIRED"
+    | "DISABLED"
+    | "PAUSED";
   cloudProviderName?: string;
   customerId?: string;
   customerName?: string;
@@ -342,21 +384,11 @@ export async function listIonSubscriptions(
     "pagination.offset": String(filters.offset || 0),
   };
 
-  if (filters.subscriptionStatus) {
-    extraParams.subscriptionStatus = filters.subscriptionStatus;
-  }
-  if (filters.cloudProviderName) {
-    extraParams.cloudProviderName = filters.cloudProviderName;
-  }
-  if (filters.customerId) {
-    extraParams.customerId = filters.customerId;
-  }
-  if (filters.customerName) {
-    extraParams.customerName = filters.customerName;
-  }
-  if (filters.billingCycle) {
-    extraParams.billingCycle = filters.billingCycle;
-  }
+  if (filters.subscriptionStatus) extraParams.subscriptionStatus = filters.subscriptionStatus;
+  if (filters.cloudProviderName) extraParams.cloudProviderName = filters.cloudProviderName;
+  if (filters.customerId) extraParams.customerId = filters.customerId;
+  if (filters.customerName) extraParams.customerName = filters.customerName;
+  if (filters.billingCycle) extraParams.billingCycle = filters.billingCycle;
 
   return apiRequest<IonSubscriptionsResponse>(
     "/integrations/ion/subscriptions",
@@ -385,24 +417,12 @@ export async function listIonCustomers(
 ): Promise<IonCustomersResponse> {
   const extraParams: Record<string, string> = {};
 
-  if (filters.pageSize) {
-    extraParams.pageSize = String(filters.pageSize);
-  }
-  if (filters.pageToken) {
-    extraParams.pageToken = filters.pageToken;
-  }
-  if (filters.customerStatus) {
-    extraParams["filter.customerStatus"] = filters.customerStatus;
-  }
-  if (filters.customerEmail) {
-    extraParams["filter.customerEmail"] = filters.customerEmail;
-  }
-  if (filters.languageCode) {
-    extraParams["filter.languageCode"] = filters.languageCode;
-  }
-  if (filters.customerName) {
-    extraParams["filter.customerName"] = filters.customerName;
-  }
+  if (filters.pageSize) extraParams.pageSize = String(filters.pageSize);
+  if (filters.pageToken) extraParams.pageToken = filters.pageToken;
+  if (filters.customerStatus) extraParams["filter.customerStatus"] = filters.customerStatus;
+  if (filters.customerEmail) extraParams["filter.customerEmail"] = filters.customerEmail;
+  if (filters.languageCode) extraParams["filter.languageCode"] = filters.languageCode;
+  if (filters.customerName) extraParams["filter.customerName"] = filters.customerName;
 
   return apiRequest<IonCustomersResponse>(
     "/integrations/ion/customers",
@@ -417,7 +437,14 @@ export async function listIonCustomers(
  * ION Orders: List with filters
  */
 export interface IonOrderFilters {
-  status?: "NEW" | "CONFIRMED" | "ON_HOLD" | "COMPLETED" | "ERROR" | "CANCELED" | "IN_PROGRESS";
+  status?:
+    | "NEW"
+    | "CONFIRMED"
+    | "ON_HOLD"
+    | "COMPLETED"
+    | "ERROR"
+    | "CANCELED"
+    | "IN_PROGRESS";
   pageSize?: number;
   pageToken?: string;
   sortBy?: string;
@@ -432,18 +459,10 @@ export async function listIonOrders(
     pageSize: String(filters.pageSize || 50),
   };
 
-  if (filters.status) {
-    extraParams.status = filters.status;
-  }
-  if (filters.pageToken) {
-    extraParams.pageToken = filters.pageToken;
-  }
-  if (filters.sortBy) {
-    extraParams.sortBy = filters.sortBy;
-  }
-  if (filters.sortOrder) {
-    extraParams.sortOrder = filters.sortOrder;
-  }
+  if (filters.status) extraParams.status = filters.status;
+  if (filters.pageToken) extraParams.pageToken = filters.pageToken;
+  if (filters.sortBy) extraParams.sortBy = filters.sortBy;
+  if (filters.sortOrder) extraParams.sortOrder = filters.sortOrder;
 
   return apiRequest<IonOrdersResponse>(
     "/integrations/ion/orders",
@@ -462,10 +481,7 @@ export async function getIonOrderDetail(
   customerId: string,
   orderId: string
 ): Promise<IonOrderDetailResponse> {
-  const extraParams: Record<string, string> = {
-    customerId,
-    orderId,
-  };
+  const extraParams: Record<string, string> = { customerId, orderId };
 
   return apiRequest<IonOrderDetailResponse>(
     "/integrations/ion/orders/detail",
@@ -488,9 +504,7 @@ export async function listIonReports(
   filters: IonReportsFilters = {}
 ): Promise<IonReportsResponse> {
   const extraParams: Record<string, string> = {};
-  if (filters.module) {
-    extraParams.module = filters.module;
-  }
+  if (filters.module) extraParams.module = filters.module;
 
   return apiRequest<IonReportsResponse>(
     "/integrations/ion/reports",
@@ -503,24 +517,20 @@ export async function listIonReports(
 
 /**
  * ION Reports: Get Metadata
- * ✅ CORREGIDO - Ahora usa el endpoint correcto
+ * ✅ FIX: backend expects GET /integrations/ion/reports/{reportId}
  */
 export async function getIonReport(
   token: string,
   reportId: string,
   includeMetadata?: boolean
 ): Promise<IonReportResponse> {
-  const extraParams: Record<string, string> = {
-    reportId, // ✅ Pasar reportId como query param
-  };
-  
+  const extraParams: Record<string, string> = {};
   if (typeof includeMetadata === "boolean") {
     extraParams.includeMetadata = String(includeMetadata);
   }
 
-  // ✅ CORRECCIÓN: Endpoint correcto es /reports/metadata, NO /reports/{reportId}
   return apiRequest<IonReportResponse>(
-    "/integrations/ion/reports/metadata",
+    `/integrations/ion/reports/${encodeURIComponent(reportId)}`,
     "GET",
     token,
     undefined,
@@ -530,22 +540,18 @@ export async function getIonReport(
 
 /**
  * ION Reports: Get Data
- * ✅ CORREGIDO - Ahora usa el endpoint correcto
+ * ✅ FIX: backend expects POST /integrations/ion/reports/{reportId}/data
+ * Body: { report: <payload> } (o payload directo; backend soporta ambos)
  */
 export async function getIonReportData(
   token: string,
   reportId: string,
   report: any
 ): Promise<IonReportDataResponse> {
-  // ✅ CORRECCIÓN: Endpoint correcto es /reports/data con POST body
-  // El reportId va en el body, NO en la URL
   return apiRequest<IonReportDataResponse>(
-    "/integrations/ion/reports/data",
+    `/integrations/ion/reports/${encodeURIComponent(reportId)}/data`,
     "POST",
     token,
-    {
-      reportId, // ✅ reportId en el body
-      report,   // ✅ report config en el body
-    }
+    { report }
   );
 }
