@@ -68,20 +68,12 @@ export default function IonSettingsPage() {
 
     try {
       const response = await pingIon(sessionToken);
-      if (response && response.ok) {
-        setStatusState({
-          status: String(response.status || ""),
-          accessExpiresAt: String(response.accessExpiresAt || ""),
-        });
-      } else {
-        setStatusState({
-          status: String(response?.status || "needs_reauth"),
-          accessExpiresAt: "",
-        });
-        if (response?.error) {
-          setErrorState(formatError(String(response.error)));
-        }
-      }
+
+      // ✅ pingIon está tipado como éxito; si falla, lanzará error y caerá al catch
+      setStatusState({
+        status: String(response.status || ""),
+        accessExpiresAt: String(response.accessExpiresAt || ""),
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setStatusState({ status: "needs_reauth", accessExpiresAt: "" });
@@ -93,17 +85,12 @@ export default function IonSettingsPage() {
 
   useEffect(() => {
     fetchStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const statusAlert = useMemo(() => {
     if (checking) {
-      return (
-        <Alert
-          message="Checking ION connection..."
-          type="info"
-          showIcon
-        />
-      );
+      return <Alert message="Checking ION connection..." type="info" showIcon />;
     }
 
     if (isConnected) {
@@ -127,11 +114,7 @@ export default function IonSettingsPage() {
     return (
       <Alert
         message="Not connected / Needs reauth"
-        description={
-          <Text>
-            Status: {statusState.status || "needs_reauth"}
-          </Text>
-        }
+        description={<Text>Status: {statusState.status || "needs_reauth"}</Text>}
         type="warning"
         showIcon
       />
@@ -161,17 +144,13 @@ export default function IonSettingsPage() {
 
       const response = await connectIon(sessionToken, payload);
 
-      if (response && response.ok) {
-        setSuccessMessage("ION conectado");
-        setStatusState({
-          status: String(response.status || ""),
-          accessExpiresAt: String(response.accessExpiresAt || ""),
-        });
-        form.resetFields(["ionToken"]);
-      } else {
-        const message = String(response?.error || "ION connection failed.");
-        setErrorState(formatError(message));
-      }
+      // ✅ connectIon está tipado como éxito; si falla, lanzará error y caerá al catch
+      setSuccessMessage("ION conectado");
+      setStatusState({
+        status: String(response.status || ""),
+        accessExpiresAt: String(response.accessExpiresAt || ""),
+      });
+      form.resetFields(["ionToken"]);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setErrorState(formatError(message));
@@ -187,9 +166,7 @@ export default function IonSettingsPage() {
           <Title level={3} style={{ marginBottom: 0 }}>
             ION Settings
           </Title>
-          <Text type="secondary">
-            Connect or reconnect your StreamOne ION account.
-          </Text>
+          <Text type="secondary">Connect or reconnect your StreamOne ION account.</Text>
 
           {statusAlert}
 
