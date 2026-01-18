@@ -660,3 +660,50 @@ export async function getIonMetricsActiveCustomers(
     { range }
   );
 }
+/**
+ * ION: Connect (guardar refresh token + accountId + hostname)
+ * POST /integrations/ion/connect
+ */
+export async function connectIon(
+  sessionToken: string,
+  payload: {
+    ionHostname: string;
+    ionAccountId: string;
+    ionToken: string; // refresh token
+  }
+): Promise<{
+  ok: boolean;
+  status?: string;
+  orgId?: string;
+  ionHostname?: string;
+  ionAccountId?: string;
+  accessExpiresAt?: string;
+  connectMode?: string;
+}> {
+  return apiRequest(
+    "/integrations/ion/connect",
+    "POST",
+    sessionToken,
+    payload
+  );
+}
+
+/**
+ * ION: Ping (verifica acceso y devuelve expiración)
+ * GET /integrations/ion/ping
+ */
+export async function pingIon(
+  sessionToken: string
+): Promise<{
+  ok: boolean;
+  orgId: string;
+  status: string;
+  accessExpiresAt: string;
+  accessTokenLast4?: string;
+}> {
+  return apiRequest(
+    "/integrations/ion/ping",
+    "GET",
+    sessionToken
+  );
+}
