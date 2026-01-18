@@ -707,3 +707,113 @@ export async function pingIon(
     sessionToken
   );
 }
+/**
+ * MODIFICACIONES PARA api.ts
+ * Añadir estas funciones al final del archivo existente
+ */
+
+// ===== ION KPIs (Microsoft Growth Dashboard) =====
+
+export type IonKpiActiveCustomersResponse = {
+  ok: boolean;
+  orgId?: string;
+  activeCustomersCount: number;
+  totalActiveSubscriptions: number;
+  timestamp?: string;
+  error?: string;
+};
+
+export type IonKpiActiveSubscriptionsResponse = {
+  ok: boolean;
+  orgId?: string;
+  totalActiveSubscriptions: number;
+  timestamp?: string;
+  error?: string;
+};
+
+export type IonKpiCurrentMonthConsumptionResponse = {
+  ok: boolean;
+  orgId?: string;
+  reportId?: string;
+  reportName?: string;
+  currentMonth?: string;
+  totalConsumption: number;
+  currency: string;
+  rowCount?: number;
+  timestamp?: string;
+  error?: string;
+};
+
+export type IonKpiGrowthResponse = {
+  ok: boolean;
+  orgId?: string;
+  reportId?: string;
+  reportName?: string;
+  currentMonth: {
+    period: string;
+    total: number;
+  };
+  previousMonth: {
+    period: string;
+    total: number;
+  };
+  growth: {
+    absolute: number;
+    percentage: number;
+  };
+  currency: string;
+  timestamp?: string;
+  error?: string;
+};
+
+/**
+ * KPI 1: Obtener customers activos con suscripciones activas
+ */
+export async function getIonKpiActiveCustomers(
+  token: string
+): Promise<IonKpiActiveCustomersResponse> {
+  return apiRequest<IonKpiActiveCustomersResponse>(
+    "/integrations/ion/kpis/active-customers",
+    "GET",
+    token
+  );
+}
+
+/**
+ * KPI 2: Obtener total de suscripciones activas
+ */
+export async function getIonKpiActiveSubscriptions(
+  token: string
+): Promise<IonKpiActiveSubscriptionsResponse> {
+  return apiRequest<IonKpiActiveSubscriptionsResponse>(
+    "/integrations/ion/kpis/active-subscriptions",
+    "GET",
+    token
+  );
+}
+
+/**
+ * KPI 3: Obtener consumo del mes actual (reporte 20105)
+ */
+export async function getIonKpiCurrentMonthConsumption(
+  token: string
+): Promise<IonKpiCurrentMonthConsumptionResponse> {
+  return apiRequest<IonKpiCurrentMonthConsumptionResponse>(
+    "/integrations/ion/kpis/current-month-consumption",
+    "GET",
+    token
+  );
+}
+
+/**
+ * KPI 4: Obtener crecimiento vs mes anterior
+ */
+export async function getIonKpiGrowthVsPreviousMonth(
+  token: string
+): Promise<IonKpiGrowthResponse> {
+  return apiRequest<IonKpiGrowthResponse>(
+    "/integrations/ion/kpis/growth-vs-previous-month",
+    "GET",
+    token
+  );
+}
