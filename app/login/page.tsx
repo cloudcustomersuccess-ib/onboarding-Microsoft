@@ -186,9 +186,7 @@ export default function LoginPage() {
                   <Input.OTP
                     length={6}
                     size="large"
-                    autoFocus
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
+                    type="tel"
                     className={styles.otpInput}
                   />
                 </Form.Item>
