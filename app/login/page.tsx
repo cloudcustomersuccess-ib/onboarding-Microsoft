@@ -6,18 +6,22 @@ import {
   Form,
   Input,
   Button,
-  Steps,
   Alert,
   Typography,
   Space,
+  Divider,
   message,
 } from "antd";
-import { MailOutlined, LockOutlined } from "@ant-design/icons";
+import { MailOutlined } from "@ant-design/icons";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { requestOtp, verifyOtp } from "@/lib/api";
 import { saveSession } from "@/lib/session";
+import { Playfair_Display } from "next/font/google";
+import styles from "./login.module.css";
 
 const { Title, Text } = Typography;
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["500", "600"] });
 
 export default function LoginPage() {
   const router = useRouter();
@@ -82,128 +86,196 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        padding: "20px",
-      }}
-    >
-      <Card
-        style={{
-          width: "100%",
-          maxWidth: "500px",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        }}
-      >
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div style={{ textAlign: "center" }}>
-            <Title level={2}>Partner Login</Title>
-            <Text type="secondary">Access your onboarding dashboard</Text>
-          </div>
-
-          <Steps
-            current={currentStep}
-            items={[
-              { title: "Email", icon: <MailOutlined /> },
-              { title: "Verify", icon: <LockOutlined /> },
-            ]}
+    <div className={styles.page}>
+      <div className={styles.leftPanel}>
+        <div className={styles.tdLogo}>
+          <Image
+            src="/images/TD SYNNEX_Logo_Standard.png"
+            alt="TD SYNNEX"
+            width={160}
+            height={36}
+            priority
           />
+        </div>
 
-          {error && (
-            <Alert message="Error" description={error} type="error" showIcon />
-          )}
-
-          {currentStep === 0 && (
-            <Form
-              form={emailForm}
-              layout="vertical"
-              onFinish={handleRequestOtp}
-            >
-              <Form.Item
-                label="Email Address"
-                name="email"
-                rules={[
-                  { required: true, message: "Please enter your email" },
-                  { type: "email", message: "Please enter a valid email" },
-                ]}
-              >
-                <Input
-                  prefix={<MailOutlined />}
-                  placeholder="your@email.com"
-                  size="large"
+        <Card className={styles.formCard} bordered={false}>
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            <div className={styles.formHeader}>
+              <div className={styles.growthBadge}>
+                <Image
+                  src="/images/Growth_Lab_Light_Mode.png"
+                  alt="Growth Lab"
+                  width={28}
+                  height={28}
                 />
-              </Form.Item>
+              </div>
+              <div>
+                <Title level={3} className={styles.formTitle}>
+                  Get Started
+                </Title>
+                <Text type="secondary">
+                  Welcome to Growth Lab. Sign in with your OTP code.
+                </Text>
+              </div>
+            </div>
 
-              <Form.Item>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  block
-                  loading={loading}
+            <Divider className={styles.divider} />
+
+            {error && (
+              <Alert message="Error" description={error} type="error" showIcon />
+            )}
+
+            {currentStep === 0 && (
+              <Form
+                form={emailForm}
+                layout="vertical"
+                onFinish={handleRequestOtp}
+                className={styles.form}
+              >
+                <Form.Item
+                  label="Email Address"
+                  name="email"
+                  rules={[
+                    { required: true, message: "Please enter your email" },
+                    { type: "email", message: "Please enter a valid email" },
+                  ]}
                 >
-                  Send Verification Code
-                </Button>
-              </Form.Item>
-            </Form>
-          )}
+                  <Input
+                    prefix={<MailOutlined />}
+                    placeholder="name@company.com"
+                    size="large"
+                  />
+                </Form.Item>
 
-          {currentStep === 1 && (
-            <Form form={otpForm} layout="vertical" onFinish={handleVerifyOtp}>
-              <Alert
-                message={`Verification code sent to ${email}`}
-                type="info"
-                showIcon
-                style={{ marginBottom: "20px" }}
-              />
-
-              <Form.Item
-                label="Verification Code"
-                name="otp"
-                rules={[
-                  { required: true, message: "Please enter the code" },
-                  { len: 6, message: "Code must be 6 digits" },
-                ]}
-              >
-                <Input
-                  prefix={<LockOutlined />}
-                  placeholder="000000"
-                  maxLength={6}
-                  size="large"
-                  style={{ letterSpacing: "0.5em", fontSize: "18px" }}
-                />
-              </Form.Item>
-
-              <Form.Item>
-                <Space direction="vertical" style={{ width: "100%" }}>
+                <Form.Item>
                   <Button
                     type="primary"
                     htmlType="submit"
                     size="large"
                     block
                     loading={loading}
+                    className={styles.primaryButton}
                   >
-                    Verify & Login
+                    Send Verification Code
                   </Button>
+                </Form.Item>
+              </Form>
+            )}
 
-                  <Button
-                    type="link"
-                    block
-                    onClick={handleBackToEmail}
-                    disabled={loading}
-                  >
-                    Use different email
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          )}
-        </Space>
-      </Card>
+            {currentStep === 1 && (
+              <Form
+                form={otpForm}
+                layout="vertical"
+                onFinish={handleVerifyOtp}
+                className={styles.form}
+              >
+                <Alert
+                  message={`Verification code sent to ${email}`}
+                  type="info"
+                  showIcon
+                />
+
+                <Form.Item
+                  label="Verification Code"
+                  name="otp"
+                  rules={[
+                    { required: true, message: "Please enter the code" },
+                    { len: 6, message: "Code must be 6 digits" },
+                  ]}
+                >
+                  <Input.OTP
+                    length={6}
+                    size="large"
+                    autoFocus
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    className={styles.otpInput}
+                  />
+                </Form.Item>
+
+                <Form.Item>
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      block
+                      loading={loading}
+                      className={styles.primaryButton}
+                    >
+                      Verify & Login
+                    </Button>
+
+                    <Button
+                      type="link"
+                      block
+                      onClick={handleBackToEmail}
+                      disabled={loading}
+                    >
+                      Use different email
+                    </Button>
+                  </Space>
+                </Form.Item>
+              </Form>
+            )}
+          </Space>
+        </Card>
+      </div>
+
+      <div className={styles.rightPanel}>
+        <div className={styles.rightContent}>
+          <div>
+            <Text className={styles.brandLabel}>Filiannta</Text>
+            <Title level={1} className={`${styles.heroTitle} ${playfair.className}`}>
+              Enter the Future
+              <br />
+              of Payments,
+              <br />
+              today
+            </Title>
+          </div>
+
+          <div className={styles.cardsRow}>
+            <div className={styles.miniCard}>
+              <div className={styles.miniBadge} />
+              <div className={styles.miniDots}>
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+            <div className={styles.statCard}>
+              <div className={styles.statLogo}>
+                <Image
+                  src="/images/Growth_Lab_Light_Mode.png"
+                  alt="Growth Lab"
+                  width={20}
+                  height={20}
+                />
+              </div>
+              <Text className={styles.statValue}>12,347.23 $</Text>
+              <Text type="secondary" className={styles.statLabel}>
+                Combined balance
+              </Text>
+              <Divider className={styles.cardDivider} />
+              <div className={styles.cardRow}>
+                <Text className={styles.cardTitle}>Primary Card</Text>
+                <Text className={styles.cardAmount}>2,546.64$</Text>
+              </div>
+              <Text className={styles.cardMeta}>3495 **** **** 6917</Text>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.rightLogo}>
+          <Image
+            src="/images/Growth_Lab_Light_Mode.png"
+            alt="Growth Lab"
+            width={42}
+            height={42}
+          />
+        </div>
+      </div>
     </div>
   );
 }

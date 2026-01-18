@@ -1,0 +1,255 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  background: #f5f8f8;
+}
+
+.leftPanel {
+  background: #ffffff;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.tdLogo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.formCard {
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid #edf2f2;
+  box-shadow: 0 24px 50px rgba(0, 48, 49, 0.08);
+}
+
+.formHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.growthBadge {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #e7f0ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 86, 87, 0.1);
+}
+
+.formTitle {
+  margin-bottom: 4px;
+  color: #003031;
+}
+
+.divider {
+  margin: 8px 0 4px;
+}
+
+.form {
+  width: 100%;
+}
+
+.primaryButton {
+  background: linear-gradient(90deg, #003031 0%, #005657 100%);
+  border: none;
+  height: 44px;
+  font-weight: 600;
+}
+
+.primaryButton:hover,
+.primaryButton:focus {
+  background: linear-gradient(90deg, #004041 0%, #006869 100%);
+}
+
+.otpInput :global(.ant-input) {
+  font-weight: 600;
+  font-size: 18px;
+  border-radius: 10px;
+}
+
+.rightPanel {
+  position: relative;
+  padding: 56px;
+  color: #eaf2f1;
+  background: radial-gradient(circle at 20% 10%, #0f5c5c 0%, #003031 52%, #002324 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.rightPanel::before {
+  content: "";
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 86, 87, 0.5) 0%, rgba(0, 48, 49, 0) 70%);
+  top: -180px;
+  left: -140px;
+}
+
+.rightContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.brandLabel {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.04em;
+}
+
+.heroTitle {
+  color: #f3fbf9;
+  font-size: 52px;
+  line-height: 1.05;
+  margin-top: 24px;
+}
+
+.cardsRow {
+  display: flex;
+  gap: 18px;
+  align-items: flex-end;
+}
+
+.miniCard {
+  width: 74px;
+  height: 140px;
+  background: rgba(245, 250, 249, 0.95);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.miniBadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #005657;
+}
+
+.miniDots {
+  display: grid;
+  gap: 6px;
+}
+
+.miniDots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 48, 49, 0.25);
+}
+
+.statCard {
+  width: 260px;
+  background: rgba(245, 250, 249, 0.96);
+  border-radius: 18px;
+  padding: 20px;
+  color: #003031;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.25);
+}
+
+.statLogo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(0, 86, 87, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.statValue {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.statLabel {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.cardDivider {
+  margin: 8px 0;
+}
+
+.cardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cardAmount {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cardMeta {
+  display: block;
+  font-size: 12px;
+  color: rgba(0, 48, 49, 0.6);
+  margin-top: 6px;
+}
+
+.rightLogo {
+  position: relative;
+  z-index: 1;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(243, 251, 249, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .rightPanel {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 720px) {
+  .leftPanel {
+    padding: 32px 24px;
+  }
+
+  .formCard {
+    max-width: 100%;
+  }
+
+  .heroTitle {
+    font-size: 40px;
+  }
+
+  .cardsRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
