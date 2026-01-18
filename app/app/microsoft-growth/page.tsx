@@ -1,345 +1,82 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Typography, Button, Space, Alert, Row, Col, Statistic } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { Card, Typography, Button, Space, Alert, Row, Col, Statistic, Spin } from "antd";
+import { ReloadOutlined, RiseOutlined, FallOutlined, MinusOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import {
-  listIonSubscriptions,
-  listIonCustomers,
-  listIonReports,
-  getIonReport,
-  getIonReportData,
-} from "@/lib/api";
 import { getToken } from "@/lib/session";
-import type { IonReport, IonReportColumn, IonReportRow, IonReportValue } from "@/types";
+import {
+  getIonKpiActiveCustomers,
+  getIonKpiActiveSubscriptions,
+  getIonKpiCurrentMonthConsumption,
+  getIonKpiGrowthVsPreviousMonth,
+  IonKpiActiveCustomersResponse,
+  IonKpiActiveSubscriptionsResponse,
+  IonKpiCurrentMonthConsumptionResponse,
+  IonKpiGrowthResponse,
+} from "@/lib/api";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
-// ✅ CORREGIDO: Buscar múltiples términos, no solo "customer_cost"
-const COST_COLUMN_HINTS = ["customer_cost", "cost", "billing", "amount", "charge", "total", "price"];
-const DEFAULT_CUSTOMERS_PAGE_SIZE = 200;
-
-// ✅ CORREGIDO: Priorizar reports de billing
-const PREFERRED_REPORT_NAMES = [
-  "Microsoft CSP Billing Customers Report",
-  "SaaS Billing Customers Report", 
-  "AWS InLine Credits Report",
-  "Legacy Azure Billing Customers Report",
-  "Pricebooks Allocation Report"
-];
-
-type MetricsState = {
-  customers: number;
-  activeSubscriptions: number;
-  customerCostCurrent: number;
-  customerCostPrevious: number;
-  currencyCode: string;
+type DashboardState = {
+  loading: boolean;
+  error: string | null;
+  activeCustomers: IonKpiActiveCustomersResponse | null;
+  activeSubscriptions: IonKpiActiveSubscriptionsResponse | null;
+  currentMonthConsumption: IonKpiCurrentMonthConsumptionResponse | null;
+  growth: IonKpiGrowthResponse | null;
 };
+
+function formatCurrency(value: number, currency?: string) {
+  if (!Number.isFinite(value)) return "-";
+  if (currency) {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2,
+      }).format(value);
+    } catch {
+      // Fallback si la moneda no es válida
+    }
+  }
+  return new Intl.NumberFormat("en-US", { 
+    style: "decimal",
+    maximumFractionDigits: 2 
+  }).format(value);
+}
+
+function formatPercentage(value: number) {
+  if (!Number.isFinite(value)) return "-";
+  const formatted = value.toFixed(2);
+  return `${formatted}%`;
+}
+
+function getGrowthIcon(percentage: number) {
+  if (percentage > 0) return <RiseOutlined style={{ color: "#52c41a" }} />;
+  if (percentage < 0) return <FallOutlined style={{ color: "#ff4d4f" }} />;
+  return <MinusOutlined style={{ color: "#8c8c8c" }} />;
+}
+
+function getGrowthColor(percentage: number) {
+  if (percentage > 0) return "#52c41a"; // Verde
+  if (percentage < 0) return "#ff4d4f"; // Rojo
+  return "#8c8c8c"; // Gris
+}
 
 export default function MicrosoftGrowthPage() {
   const router = useRouter();
-  const [metrics, setMetrics] = useState<MetricsState>({
-    customers: 0,
-    activeSubscriptions: 0,
-    customerCostCurrent: 0,
-    customerCostPrevious: 0,
-    currencyCode: "",
+  const [state, setState] = useState<DashboardState>({
+    loading: true,
+    error: null,
+    activeCustomers: null,
+    activeSubscriptions: null,
+    currentMonthConsumption: null,
+    growth: null,
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const formatIonError = (message: string) => {
-    if (!message) return "Failed to load growth metrics";
-    if (message.includes("HTTP 401") || message.includes("oauth/token failed")) {
-      return "ION refresh token expired or invalid. Please reconnect ION with a new token from the ION portal.";
-    }
-    if (message.includes("conexi") || message.includes("needs_reauth")) {
-      return "ION connection not configured or needs re-authentication. Please reconnect ION.";
-    }
-    if (message.includes("status=")) {
-      return "ION connection is not active. Please reconnect ION.";
-    }
-    return message;
-  };
-
-  const formatCurrency = (value: number, currencyCode?: string) => {
-    if (!Number.isFinite(value)) return "-";
-    if (currencyCode) {
-      try {
-        return new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: currencyCode,
-          maximumFractionDigits: 2,
-        }).format(value);
-      } catch {
-        return new Intl.NumberFormat("en-US", {
-          maximumFractionDigits: 2,
-        }).format(value);
-      }
-    }
-    return new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
-
-  const extractColumns = (report?: IonReport): IonReportColumn[] => {
-    const specs = report?.specs || {};
-    const columns =
-      specs.selectedColumns ||
-      specs.selected_columns ||
-      specs.columns ||
-      specs.allColumns ||
-      specs.all_columns ||
-      [];
-    return Array.isArray(columns) ? (columns as IonReportColumn[]) : [];
-  };
-
-  // ✅ CORREGIDO: Buscar con múltiples hints
-  const findCustomerCostColumnIndex = (columns: IonReportColumn[]) => {
-    for (const hint of COST_COLUMN_HINTS) {
-      const index = columns.findIndex((column) => {
-        const templateId =
-          (column && (column.columnTemplateId || column.column_template_id)) || "";
-        const displayName = (column && column.displayName) || "";
-        
-        return (
-          String(templateId).toLowerCase().includes(hint) ||
-          String(displayName).toLowerCase().includes(hint)
-        );
-      });
-      
-      if (index !== -1) {
-        console.log(`Found cost column with hint "${hint}" at index ${index}`);
-        return index;
-      }
-    }
-    
-    return -1;
-  };
-
-  const extractNumericValue = (value?: IonReportValue) => {
-    if (!value) return null;
-    if (value.moneyValue && typeof value.moneyValue.value === "number") {
-      return value.moneyValue.value;
-    }
-    if (typeof value.floatValue === "number") {
-      return value.floatValue;
-    }
-    if (typeof value.intValue === "number") {
-      return value.intValue;
-    }
-    if (typeof value.stringValue === "string") {
-      const parsed = Number(value.stringValue);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return null;
-  };
-
-  const sumCustomerCost = (rows: IonReportRow[], columnIndex: number) => {
-    if (columnIndex < 0) return 0;
-    let total = 0;
-    rows.forEach((row) => {
-      const values = row?.values || [];
-      if (columnIndex >= values.length) return;
-      const numericValue = extractNumericValue(values[columnIndex]);
-      if (typeof numericValue === "number" && Number.isFinite(numericValue)) {
-        total += numericValue;
-      }
-    });
-    return total;
-  };
-
-  const detectCurrencyCode = (report: IonReport | undefined, rows: IonReportRow[]) => {
-    const fromSpecs =
-      report?.specs?.currencyOption?.selected_currency?.code ||
-      report?.specs?.currencyOption?.selectedCurrency?.code;
-    if (fromSpecs) return String(fromSpecs);
-    for (const row of rows || []) {
-      for (const value of row?.values || []) {
-        if (value?.moneyValue?.currency) {
-          return String(value.moneyValue.currency);
-        }
-      }
-    }
-    return "";
-  };
-
-  const buildReportPayload = (report: IonReport, relativeDateRange: string) => {
-    const payload = JSON.parse(JSON.stringify(report || {}));
-    payload.specs = payload.specs || {};
-    payload.specs.dateRangeOption = payload.specs.dateRangeOption || {};
-    payload.specs.dateRangeOption.selectedRange = { relativeDateRange };
-    return payload;
-  };
-
-  const fetchCustomersCount = async (token: string) => {
-    let nextPageToken: string | undefined;
-    let total = 0;
-
-    do {
-      const response = await listIonCustomers(token, {
-        pageSize: DEFAULT_CUSTOMERS_PAGE_SIZE,
-        pageToken: nextPageToken,
-      });
-
-      if (!response.ok || !response.data) {
-        throw new Error(response.error || "Failed to load customers");
-      }
-
-      total += (response.data.customers || []).length;
-      nextPageToken = response.data.nextPageToken || undefined;
-    } while (nextPageToken);
-
-    return total;
-  };
-
-  const fetchActiveSubscriptionsCount = async (token: string) => {
-    const response = await listIonSubscriptions(token, {
-      subscriptionStatus: "ACTIVE",
-      limit: 1,
-      offset: 0,
-    });
-
-    if (!response.ok || !response.data) {
-      throw new Error(response.error || "Failed to load subscriptions");
-    }
-
-    return response.data.pagination?.total ?? response.data.items?.length ?? 0;
-  };
-
-  // ✅ CORREGIDO: Buscar primero en reports de billing preferidos
-  const findCustomerCostReport = async (token: string) => {
-    console.log("1. Listing all reports...");
-    const reportsResponse = await listIonReports(token);
-    if (!reportsResponse.ok || !reportsResponse.data) {
-      throw new Error(reportsResponse.error || "Failed to load reports");
-    }
-
-    const allReports = reportsResponse.data.reports || [];
-    console.log(`Found ${allReports.length} total reports`);
-
-    // Filtrar reports de billing
-    const billingReports = allReports.filter(r => 
-      r.category === "BILLING_REPORTS" || 
-      r.displayName?.toLowerCase().includes("billing") ||
-      r.displayName?.toLowerCase().includes("cost")
-    );
-    
-    console.log(`Found ${billingReports.length} billing reports:`, 
-      billingReports.map(r => r.displayName)
-    );
-
-    // Ordenar por preferencia
-    const sortedReports = [...billingReports].sort((a, b) => {
-      const aIndex = PREFERRED_REPORT_NAMES.findIndex(name => 
-        a.displayName?.includes(name)
-      );
-      const bIndex = PREFERRED_REPORT_NAMES.findIndex(name => 
-        b.displayName?.includes(name)
-      );
-      
-      if (aIndex === -1 && bIndex === -1) return 0;
-      if (aIndex === -1) return 1;
-      if (bIndex === -1) return -1;
-      return aIndex - bIndex;
-    });
-
-    // Intentar con reports ordenados por preferencia
-    for (const report of sortedReports) {
-      const reportId = report.reportId;
-      if (!reportId) continue;
-
-      console.log(`2. Checking report: ${report.displayName} (${reportId})`);
-
-      const reportResponse = await getIonReport(token, String(reportId), true);
-      if (!reportResponse.ok || !reportResponse.report) {
-        console.log(`Failed to get metadata for ${reportId}`);
-        continue;
-      }
-
-      const columns = extractColumns(reportResponse.report);
-      console.log(`Report has ${columns.length} columns:`, 
-        columns.map(c => c.displayName || c.columnTemplateId)
-      );
-      
-      const costIndex = findCustomerCostColumnIndex(columns);
-      if (costIndex !== -1) {
-        console.log(`✅ Found report with cost column: ${report.displayName}`);
-        return { report: reportResponse.report, costIndex };
-      } else {
-        console.log(`❌ No cost column found in ${report.displayName}`);
-      }
-    }
-
-    // Si no encontramos en billing reports, buscar en todos
-    console.log("3. No cost column found in billing reports, trying all reports...");
-    
-    for (const report of allReports) {
-      const reportId = report.reportId;
-      if (!reportId) continue;
-      
-      // Saltar los que ya revisamos
-      if (billingReports.some(br => br.reportId === report.reportId)) {
-        continue;
-      }
-
-      const reportResponse = await getIonReport(token, String(reportId), true);
-      if (!reportResponse.ok || !reportResponse.report) {
-        continue;
-      }
-
-      const columns = extractColumns(reportResponse.report);
-      const costIndex = findCustomerCostColumnIndex(columns);
-      if (costIndex !== -1) {
-        console.log(`✅ Found report with cost column: ${report.displayName}`);
-        return { report: reportResponse.report, costIndex };
-      }
-    }
-
-    throw new Error(
-      "No report with customer cost data found. Available billing reports: " +
-      billingReports.map(r => r.displayName).join(", ")
-    );
-  };
-
-  const fetchCustomerCostForRange = async (
-    token: string,
-    report: IonReport,
-    costIndex: number,
-    relativeDateRange: string
-  ) => {
-    if (!report.reportId) {
-      throw new Error("Report ID missing");
-    }
-
-    const payload = buildReportPayload(report, relativeDateRange);
-    const response = await getIonReportData(token, String(report.reportId), payload);
-
-    if (!response.ok || !response.data) {
-      throw new Error(response.error || "Failed to load report data");
-    }
-
-    const reportData = response.data;
-    const responseReport = reportData.report || report;
-    const rows =
-      reportData.data?.rows ||
-      reportData.rows ||
-      [];
-
-    const columns = extractColumns(responseReport);
-    const resolvedIndex = columns.length ? findCustomerCostColumnIndex(columns) : costIndex;
-    const columnIndex = resolvedIndex !== -1 ? resolvedIndex : costIndex;
-
-    return {
-      total: sumCustomerCost(rows, columnIndex),
-      currencyCode: detectCurrencyCode(responseReport, rows),
-    };
-  };
-
-  const fetchMetrics = async () => {
-    setLoading(true);
-    setError(null);
+  const load = async () => {
+    setState((s) => ({ ...s, loading: true, error: null }));
 
     try {
       const token = getToken();
@@ -348,107 +85,273 @@ export default function MicrosoftGrowthPage() {
         return;
       }
 
-      const [customers, activeSubscriptions] = await Promise.all([
-        fetchCustomersCount(token),
-        fetchActiveSubscriptionsCount(token),
+      // Llamadas paralelas a los 4 KPIs
+      const [customers, subscriptions, consumption, growth] = await Promise.all([
+        getIonKpiActiveCustomers(token),
+        getIonKpiActiveSubscriptions(token),
+        getIonKpiCurrentMonthConsumption(token),
+        getIonKpiGrowthVsPreviousMonth(token),
       ]);
 
-      const { report, costIndex } = await findCustomerCostReport(token);
+      // Verificar si alguna respuesta tiene error
+      const firstError =
+        customers?.error || subscriptions?.error || consumption?.error || growth?.error || null;
 
-      const [currentResult, previousResult] = await Promise.all([
-        fetchCustomerCostForRange(token, report, costIndex, "MONTH_TO_DATE"),
-        fetchCustomerCostForRange(token, report, costIndex, "LAST_MONTH"),
-      ]);
+      if (firstError) {
+        setState((s) => ({ 
+          ...s, 
+          loading: false, 
+          error: firstError,
+          // Mantener datos aunque haya error para mostrar lo que sí funcionó
+          activeCustomers: customers.ok ? customers : null,
+          activeSubscriptions: subscriptions.ok ? subscriptions : null,
+          currentMonthConsumption: consumption.ok ? consumption : null,
+          growth: growth.ok ? growth : null,
+        }));
+        return;
+      }
 
-      setMetrics({
-        customers,
-        activeSubscriptions,
-        customerCostCurrent: currentResult.total,
-        customerCostPrevious: previousResult.total,
-        currencyCode: currentResult.currencyCode || previousResult.currencyCode || "",
+      setState({
+        loading: false,
+        error: null,
+        activeCustomers: customers,
+        activeSubscriptions: subscriptions,
+        currentMonthConsumption: consumption,
+        growth: growth,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load growth metrics";
-      setError(formatIonError(message));
-      console.error("Error loading metrics:", err);
-    } finally {
-      setLoading(false);
+      const msg = err instanceof Error ? err.message : "Failed to load dashboard KPIs";
+      setState((s) => ({ 
+        ...s, 
+        loading: false, 
+        error: msg,
+        // Mantener datos previos
+      }));
     }
   };
 
   useEffect(() => {
-    fetchMetrics();
+    load();
   }, []);
 
-  const growthValue = metrics.customerCostCurrent - metrics.customerCostPrevious;
-  const growthColor = growthValue >= 0 ? "#3f8600" : "#cf1322";
-  const growthLabel = `${growthValue >= 0 ? "+" : "-"}${formatCurrency(Math.abs(growthValue), metrics.currencyCode)}`;
+  // Valores por defecto para evitar errores
+  const activeCustomersCount = state.activeCustomers?.activeCustomersCount ?? 0;
+  const totalActiveSubscriptions = state.activeSubscriptions?.totalActiveSubscriptions ?? 0;
+  const currentMonthTotal = state.currentMonthConsumption?.totalConsumption ?? 0;
+  const currency = state.currentMonthConsumption?.currency || state.growth?.currency || "USD";
+  
+  const growthAbsolute = state.growth?.growth?.absolute ?? 0;
+  const growthPercentage = state.growth?.growth?.percentage ?? 0;
+  const currentPeriod = state.growth?.currentMonth?.period || "-";
+  const previousPeriod = state.growth?.previousMonth?.period || "-";
+  const currentTotal = state.growth?.currentMonth?.total ?? 0;
+  const previousTotal = state.growth?.previousMonth?.total ?? 0;
 
   return (
     <div>
       <Card
         title={
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "16px",
-            }}
-          >
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            flexWrap: "wrap", 
+            gap: 16 
+          }}>
             <Title level={3} style={{ margin: 0 }}>
-              Microsoft Growth
+              Microsoft Growth Dashboard
             </Title>
             <Space wrap>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={fetchMetrics}
-                loading={loading}
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={load} 
+                loading={state.loading}
               >
                 Refresh
               </Button>
             </Space>
           </div>
         }
-        loading={loading}
       >
-        {error && (
+        {state.error && (
           <Alert
-            message="Error"
-            description={error}
-            type="error"
+            message="Error loading some KPIs"
+            description={state.error}
+            type="warning"
             showIcon
             closable
-            style={{ marginBottom: "20px" }}
+            style={{ marginBottom: 16 }}
           />
         )}
 
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title="Customers" value={metrics.customers} />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title="Active subscriptions" value={metrics.activeSubscriptions} />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic
-              title="Customer cost (month to date)"
-              value={metrics.customerCostCurrent}
-              formatter={(value) =>
-                formatCurrency(Number(value), metrics.currencyCode)
+        {state.loading && (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <Spin size="large" tip="Loading KPIs..." />
+          </div>
+        )}
+
+        {!state.loading && (
+          <>
+            {/* Fila 1: KPIs principales */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <Card size="small" style={{ background: "#f0f5ff" }}>
+                  <Statistic
+                    title="Active Customers"
+                    value={activeCustomersCount}
+                    prefix="👥"
+                    valueStyle={{ color: "#1890ff" }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Customers with active subscriptions
+                  </Text>
+                </Card>
+              </Col>
+
+              <Col xs={24} sm={12} lg={6}>
+                <Card size="small" style={{ background: "#f6ffed" }}>
+                  <Statistic
+                    title="Active Subscriptions"
+                    value={totalActiveSubscriptions}
+                    prefix="📋"
+                    valueStyle={{ color: "#52c41a" }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Total subscriptions in ACTIVE status
+                  </Text>
+                </Card>
+              </Col>
+
+              <Col xs={24} sm={12} lg={6}>
+                <Card size="small" style={{ background: "#fff7e6" }}>
+                  <Statistic
+                    title="Current Month Consumption"
+                    value={currentMonthTotal}
+                    formatter={(v) => formatCurrency(Number(v), currency)}
+                    prefix="💰"
+                    valueStyle={{ color: "#fa8c16" }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {state.currentMonthConsumption?.currentMonth || "This month"}
+                  </Text>
+                </Card>
+              </Col>
+
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: growthPercentage >= 0 ? "#f6ffed" : "#fff1f0" 
+                  }}
+                >
+                  <Statistic
+                    title="Growth vs Previous Month"
+                    value={growthPercentage}
+                    formatter={(v) => formatPercentage(Number(v))}
+                    prefix={getGrowthIcon(growthPercentage)}
+                    valueStyle={{ color: getGrowthColor(growthPercentage) }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {formatCurrency(Math.abs(growthAbsolute), currency)} 
+                    {growthPercentage >= 0 ? " increase" : " decrease"}
+                  </Text>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Fila 2: Detalles del crecimiento */}
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <Card 
+                  title="Month-over-Month Comparison" 
+                  size="small"
+                  style={{ height: "100%" }}
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <Statistic
+                        title={`Current Month (${currentPeriod})`}
+                        value={currentTotal}
+                        formatter={(v) => formatCurrency(Number(v), currency)}
+                        valueStyle={{ fontSize: 18 }}
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <Statistic
+                        title={`Previous Month (${previousPeriod})`}
+                        value={previousTotal}
+                        formatter={(v) => formatCurrency(Number(v), currency)}
+                        valueStyle={{ fontSize: 18 }}
+                      />
+                    </Col>
+                  </Row>
+                  <div style={{ marginTop: 16, padding: 12, background: "#fafafa", borderRadius: 4 }}>
+                    <Text strong>Absolute Change: </Text>
+                    <Text 
+                      style={{ 
+                        color: getGrowthColor(growthPercentage),
+                        fontSize: 16,
+                        fontWeight: 600
+                      }}
+                    >
+                      {growthAbsolute >= 0 ? "+" : ""}
+                      {formatCurrency(growthAbsolute, currency)}
+                    </Text>
+                  </div>
+                </Card>
+              </Col>
+
+              <Col xs={24} lg={12}>
+                <Card 
+                  title="Summary" 
+                  size="small"
+                  style={{ height: "100%" }}
+                >
+                  <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                    <div>
+                      <Text type="secondary">Report Used:</Text>
+                      <br />
+                      <Text strong>
+                        {state.currentMonthConsumption?.reportName || "Customer Subscriptions Report"}
+                        {" "}(ID: {state.currentMonthConsumption?.reportId || "20105"})
+                      </Text>
+                    </div>
+                    <div>
+                      <Text type="secondary">Currency:</Text>
+                      <br />
+                      <Text strong>{currency}</Text>
+                    </div>
+                    <div>
+                      <Text type="secondary">Last Updated:</Text>
+                      <br />
+                      <Text>
+                        {state.growth?.timestamp 
+                          ? new Date(state.growth.timestamp).toLocaleString() 
+                          : "-"}
+                      </Text>
+                    </div>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Nota explicativa */}
+            <Alert
+              message="About these metrics"
+              description={
+                <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
+                  <li><strong>Active Customers:</strong> Unique customers with at least one ACTIVE subscription</li>
+                  <li><strong>Active Subscriptions:</strong> Total count of subscriptions in ACTIVE status (excludes CANCELLED, EXPIRED, etc.)</li>
+                  <li><strong>Current Month Consumption:</strong> Total consumption from Customer Subscriptions Report (ID: 20105) for the current month</li>
+                  <li><strong>Growth vs Previous Month:</strong> Comparison between current month and previous month consumption</li>
+                </ul>
               }
+              type="info"
+              showIcon
+              style={{ marginTop: 16 }}
             />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic
-              title="Customer cost growth (MoM)"
-              value={growthValue}
-              valueStyle={{ color: growthColor }}
-              formatter={() => growthLabel}
-            />
-          </Col>
-        </Row>
+          </>
+        )}
       </Card>
     </div>
   );

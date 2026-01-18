@@ -33,11 +33,37 @@ function apiHandle_(req) {
   if (path === "/integrations/ion/orders/detail") return respond_(req, ionOrderDetail_(req, user));
   if (path === "/integrations/ion/reports") return respond_(req, ionReports_(req, user));
 
+  // ✅ FIX: endpoints explícitos para metadata/data
+  // (tu front llama /integrations/ion/reports/metadata?reportId=... y /integrations/ion/reports/data?reportId=...)
+  if (path === "/integrations/ion/reports/metadata") {
+    const reportId = String((req.query && (req.query.reportId || req.query.reportid)) || (req.body && (req.body.reportId || req.body.reportid)) || "").trim();
+    return respond_(req, ionReportMetadata_(req, user, reportId));
+  }
+
+  if (path === "/integrations/ion/reports/data") {
+    const reportId = String((req.query && (req.query.reportId || req.query.reportid)) || (req.body && (req.body.reportId || req.body.reportid)) || "").trim();
+    return respond_(req, ionReportData_(req, user, reportId));
+  }
+
+  // Legacy routes por path:
+  //  - /integrations/ion/reports/{reportId}
+  //  - /integrations/ion/reports/{reportId}/data
+  // IMPORTANTE: NO queremos que 'metadata' o 'data' se interpreten como reportId.
   const r1 = rawPath.match(/^\/integrations\/ion\/reports\/([^\/]+)$/i);
-  if (r1) return respond_(req, ionReportMetadata_(req, user, decodeURIComponent(r1[1])));
+  if (r1) {
+    const rid = String(decodeURIComponent(r1[1]) || "").trim();
+    if (rid && rid.toLowerCase() !== "metadata" && rid.toLowerCase() !== "data") {
+      return respond_(req, ionReportMetadata_(req, user, rid));
+    }
+  }
 
   const r2 = rawPath.match(/^\/integrations\/ion\/reports\/([^\/]+)\/data$/i);
-  if (r2) return respond_(req, ionReportData_(req, user, decodeURIComponent(r2[1])));
+  if (r2) {
+    const rid = String(decodeURIComponent(r2[1]) || "").trim();
+    if (rid && rid.toLowerCase() !== "metadata" && rid.toLowerCase() !== "data") {
+      return respond_(req, ionReportData_(req, user, rid));
+    }
+  }
 
 
   if (path === "/onboardings") return respond_(req, listOnboardings_(user));

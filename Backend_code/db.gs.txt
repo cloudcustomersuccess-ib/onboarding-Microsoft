@@ -19,7 +19,7 @@ function getSpreadsheet_() {
   if (!id || String(id).trim() === "") {
     throw new Error(
       "CONFIG.SPREADSHEET_ID está vacío o no configurado. " +
-      "Verifica config.gs y asegúrate de que CONFIG.SPREADSHEET_ID tiene un valor válido."
+        "Verifica config.gs y asegúrate de que CONFIG.SPREADSHEET_ID tiene un valor válido."
     );
   }
 
@@ -31,7 +31,7 @@ function getSpreadsheet_() {
   } catch (err) {
     throw new Error(
       `Error al abrir spreadsheet con ID "${id}": ${err.message || err}. ` +
-      "Verifica que el ID es correcto y que el script tiene permisos de acceso."
+        "Verifica que el ID es correcto y que el script tiene permisos de acceso."
     );
   }
 }
@@ -57,7 +57,7 @@ function getSheet_(name) {
   if (!sh) {
     throw new Error(
       `La pestaña "${name}" no existe en el spreadsheet. ` +
-      `Verifica que la pestaña existe y que el nombre en CONFIG.SHEETS.* coincide exactamente.`
+        `Verifica que la pestaña existe y que el nombre en CONFIG.SHEETS.* coincide exactamente.`
     );
   }
 
@@ -79,7 +79,9 @@ function db() {
  * @returns {Object} Mapa de nombre de columna -> índice (1-indexed)
  */
 function getHeaderMap_(sheet) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < 1) return {};
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const map = {};
   headers.forEach((h, i) => {
     map[String(h).trim()] = i + 1;
@@ -101,8 +103,8 @@ function findRowByClienteId_(sheetName, clienteId) {
   if (lastRow < 2) return -1;
 
   const values = sh.getRange(2, col, lastRow - 1, 1).getValues().flat();
-  const idx = values.findIndex(v => String(v).trim() === String(clienteId).trim());
-  return idx === -1 ? -1 : (idx + 2);
+  const idx = values.findIndex((v) => String(v).trim() === String(clienteId).trim());
+  return idx === -1 ? -1 : idx + 2;
 }
 
 /**
@@ -110,8 +112,10 @@ function findRowByClienteId_(sheetName, clienteId) {
  */
 function readRowAsObject_(sheetName, rowNumber) {
   const sh = getSheet_(sheetName);
-  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  const row = sh.getRange(rowNumber, 1, 1, sh.getLastColumn()).getValues()[0];
+  const lastCol = sh.getLastColumn();
+  if (lastCol < 1) return {};
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  const row = sh.getRange(rowNumber, 1, 1, lastCol).getValues()[0];
   const obj = {};
   headers.forEach((h, i) => {
     obj[String(h).trim()] = row[i];
@@ -157,10 +161,72 @@ function auditLog_(entry) {
     entry.CorrelationId,
   ]);
 }
+
 // ===== IonConnections DB Helpers =====
 
+/**
+ * ✅ Asegura que IonConnections tenga todas las columnas necesarias.
+ * Esto es CRÍTICO para que se guarde el refresh token rotatorio + access token + expiración.
+ */
+function ensureIonConnectionsSchema_(sh) {
+  const REQUIRED = [
+    "connectionId",
+    "orgId",
+    "createdAt",
+    "updatedAt",
+
+    "ionHostname",
+    "ionAccountId",
+
+    // ✅ Tokens nuevos (refresh + access)
+    "refreshTokenCiphertext",
+    "accessTokenCiphertext",
+    "accessExpiresAt",
+
+    // Estado/telemetría
+    "lastUsedAt",
+    "lastValidatedAt",
+    "tokenLast4",
+    "status",
+    "lastError",
+    "revokedAt",
+
+    // Legacy (si existía en tu implementación anterior)
+    "tokenCiphertext",
+  ];
+
+  const lastCol = sh.getLastColumn();
+  const lastRow = sh.getLastRow();
+
+  // Si hoja vacía (sin headers), crea headers de cero
+  if (lastRow === 0 || lastCol === 0) {
+    sh.getRange(1, 1, 1, REQUIRED.length).setValues([REQUIRED]);
+    return;
+  }
+
+  // Leer headers existentes
+  const headers = sh
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map((h) => String(h).trim());
+
+  const existing = new Set(headers.filter(Boolean));
+
+  // Añadir los que falten al final
+  let col = lastCol;
+  REQUIRED.forEach((h) => {
+    if (!existing.has(h)) {
+      col += 1;
+      sh.getRange(1, col).setValue(h);
+    }
+  });
+}
+
 function ionSheet_() {
-  return getSheet_("IonConnections"); // usa tu helper getSheet_()
+  const sh = getSheet_("IonConnections"); // usa tu helper getSheet_()
+  // ✅ Asegura esquema al vuelo
+  ensureIonConnectionsSchema_(sh);
+  return sh;
 }
 
 function ionConnFindByOrg_(orgId) {
@@ -169,11 +235,15 @@ function ionConnFindByOrg_(orgId) {
 
   const sh = ionSheet_();
   const values = sh.getDataRange().getValues();
-  const headers = values[0];
+  if (!values || values.length < 2) return null;
+
+  const headers = values[0].map((h) => String(h).trim());
   const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
 
+  if (idx.orgId == null) return null;
+
   for (let r = 1; r < values.length; r++) {
-    if (String(values[r][idx.orgId]) === orgId) {
+    if (String(values[r][idx.orgId]).trim() === orgId) {
       return { row: r + 1, data: rowToObj_(headers, values[r]) };
     }
   }
@@ -181,34 +251,57 @@ function ionConnFindByOrg_(orgId) {
 }
 
 function ionConnUpsert_(orgId, patch) {
+  orgId = String(orgId || "").trim();
+  if (!orgId) throw new Error("ionConnUpsert_: orgId requerido");
+
   const sh = ionSheet_();
   const now = now_(); // tu helper
 
   const existing = ionConnFindByOrg_(orgId);
+
   if (!existing) {
     const connectionId = `IONCONN-${Utilities.getUuid()}`;
-    const rowObj = Object.assign({
-      connectionId,
-      orgId,
-      createdAt: now,
-      updatedAt: now,
-      ionHostname: "",
-      ionAccountId: "",
-      tokenCiphertext: "",
-      tokenLast4: "",
-      status: "needs_reauth",
-      lastValidatedAt: "",
-      lastError: "",
-    }, patch || {});
 
-    appendRowByHeaders_(sh, rowObj); // si no tienes, lo hacemos luego
+    // ✅ Defaults alineados con el nuevo esquema
+    const rowObj = Object.assign(
+      {
+        connectionId,
+        orgId,
+        createdAt: now,
+        updatedAt: now,
+
+        ionHostname: "",
+        ionAccountId: "",
+
+        refreshTokenCiphertext: "",
+        accessTokenCiphertext: "",
+        accessExpiresAt: "",
+
+        // legacy
+        tokenCiphertext: "",
+
+        tokenLast4: "",
+        status: "needs_reauth",
+        lastUsedAt: "",
+        lastValidatedAt: "",
+        lastError: "",
+        revokedAt: "",
+      },
+      patch || {}
+    );
+
+    appendRowByHeaders_(sh, rowObj);
     return { action: "insert", connectionId };
   }
 
-  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const headers = sh
+    .getRange(1, 1, 1, sh.getLastColumn())
+    .getValues()[0]
+    .map((h) => String(h).trim());
   const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
 
   const updates = Object.assign({}, patch || {}, { updatedAt: now });
+
   Object.keys(updates).forEach((key) => {
     if (idx[key] == null) return;
     sh.getRange(existing.row, idx[key] + 1).setValue(updates[key]);
@@ -219,14 +312,16 @@ function ionConnUpsert_(orgId, patch) {
 
 function rowToObj_(headers, row) {
   const obj = {};
-  headers.forEach((h, i) => obj[h] = row[i]);
+  headers.forEach((h, i) => (obj[h] = row[i]));
   return obj;
 }
+
 function ionLock_(orgId) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000); // 20s
   return lock;
 }
+
 /**
  * appendRowByHeaders_(sheet, obj)
  * - Lee headers en fila 1
@@ -243,17 +338,217 @@ function appendRowByHeaders_(sheet, obj) {
   const headers = sheet
     .getRange(1, 1, 1, lastCol)
     .getValues()[0]
-    .map(h => String(h).trim());
+    .map((h) => String(h).trim());
 
-  const hasAnyHeader = headers.some(h => !!h);
+  const hasAnyHeader = headers.some((h) => !!h);
   if (!hasAnyHeader) {
     throw new Error("appendRowByHeaders_: la fila 1 no tiene headers (nombres de columnas)");
   }
 
-  const row = headers.map(h =>
+  const row = headers.map((h) =>
     Object.prototype.hasOwnProperty.call(obj, h) ? obj[h] : ""
   );
 
   sheet.appendRow(row);
   return { ok: true, row: sheet.getLastRow() };
+}
+
+// ===== AGREGAR ESTAS FUNCIONES AL FINAL DE TU db.gs =====
+
+/**
+ * Helper: Buscar por clave genérica
+ * Encuentra la primera fila donde keyColumn == keyValue
+ * @returns {number} Row number (1-indexed) o -1 si no existe
+ */
+function findRowByKey_(sheetName, keyColumn, keyValue) {
+  const sh = getSheet_(sheetName);
+  const hm = getHeaderMap_(sh);
+  const col = hm[keyColumn];
+
+  if (!col) {
+    return -1; // Columna no existe
+  }
+
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) {
+    return -1; // Sheet vacía
+  }
+
+  const values = sh.getRange(2, col, lastRow - 1, 1).getValues().flat();
+  const idx = values.findIndex((v) => String(v).trim() === String(keyValue).trim());
+
+  return idx === -1 ? -1 : idx + 2;
+}
+
+/**
+ * Upsert genérico por clave
+ * Si existe la fila con keyColumn=keyValue, actualiza. Si no, inserta nueva fila.
+ */
+function upsertByKey_(sheetName, keyColumn, keyValue, data) {
+  const sh = getSheet_(sheetName);
+  const existingRow = findRowByKey_(sheetName, keyColumn, keyValue);
+
+  if (existingRow !== -1) {
+    // Actualizar fila existente
+    const hm = getHeaderMap_(sh);
+    Object.keys(data).forEach((key) => {
+      const col = hm[key];
+      if (col) {
+        sh.getRange(existingRow, col).setValue(data[key]);
+      }
+    });
+    return { created: false, row: existingRow };
+  } else {
+    // Insertar nueva fila
+    const dataWithKey = Object.assign({}, data);
+    dataWithKey[keyColumn] = keyValue;
+    appendRowByHeaders_(sh, dataWithKey);
+    return { created: true, row: sh.getLastRow() };
+  }
+}
+
+/**
+ * Upsert por ClienteID (shortcut común)
+ */
+function upsertByClienteId_(sheetName, clienteId, data) {
+  return upsertByKey_(sheetName, "ClienteID", clienteId, data);
+}
+
+/**
+ * Helper: safe get de propiedades de objetos
+ */
+function safeGet_(obj, key, fallback) {
+  return obj && Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : fallback;
+}
+
+/**
+ * Upsert UserOnboardingLink
+ * Crea o actualiza el vínculo entre UserId y ClienteID
+ */
+function upsertUserOnboardingLink_(userId, clienteId, accessRole) {
+  const sheetName = CONFIG.SHEETS.USER_ONBOARDINGS;
+
+  try {
+    const sh = getSheet_(sheetName);
+    const hm = getHeaderMap_(sh);
+
+    if (!hm["UserId"] || !hm["ClienteID"]) {
+      return { ok: false, error: "USER_ONBOARDINGS: faltan columnas UserId/ClienteID" };
+    }
+
+    const lastRow = sh.getLastRow();
+    const lastCol = sh.getLastColumn();
+    const headers = sh
+      .getRange(1, 1, 1, lastCol)
+      .getValues()[0]
+      .map((h) => String(h).trim());
+
+    const idxUser = headers.indexOf("UserId");
+    const idxCli = headers.indexOf("ClienteID");
+    const idxRole = headers.indexOf("AccessRole");
+
+    // Si no hay filas, append
+    if (lastRow < 2) {
+      const row = headers.map((h) => {
+        if (h === "UserId") return userId;
+        if (h === "ClienteID") return clienteId;
+        if (h === "AccessRole") return accessRole || "User";
+        if (h === "CreatedAt") return now_();
+        return "";
+      });
+      sh.appendRow(row);
+      return { ok: true, created: true, row: sh.getLastRow() };
+    }
+
+    const rows = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    let foundRow = -1;
+
+    for (let i = 0; i < rows.length; i++) {
+      if (
+        String(rows[i][idxUser]) === String(userId) &&
+        String(rows[i][idxCli]) === String(clienteId)
+      ) {
+        foundRow = i + 2;
+        break;
+      }
+    }
+
+    // Existe: opcionalmente actualiza AccessRole
+    if (foundRow !== -1) {
+      if (idxRole !== -1) {
+        try {
+          sh.getRange(foundRow, idxRole + 1).setValue(accessRole || "User");
+        } catch (_) {}
+      }
+      return { ok: true, created: false, row: foundRow };
+    }
+
+    // No existe: append
+    const newRow = headers.map((h) => {
+      if (h === "UserId") return userId;
+      if (h === "ClienteID") return clienteId;
+      if (h === "AccessRole") return accessRole || "User";
+      if (h === "CreatedAt") return now_();
+      return "";
+    });
+    sh.appendRow(newRow);
+
+    return { ok: true, created: true, row: sh.getLastRow() };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+/**
+ * Resolver OrganizationId para un cliente
+ * Intenta obtenerlo del payload, luego de la sheet existente, o crea uno nuevo
+ */
+function resolveOrgIdForCliente_(clienteId, body) {
+  const fromPayload = String(safeGet_(body, "OrganizationId", "")).trim();
+  if (fromPayload) return fromPayload;
+
+  const row = findRowByClienteId_(CONFIG.SHEETS.ONBOARDINGS, clienteId);
+  if (row !== -1) {
+    const existing = readRowAsObject_(CONFIG.SHEETS.ONBOARDINGS, row);
+    const existingOrg = String(existing.OrganizationId || "").trim();
+    if (existingOrg) return existingOrg;
+  }
+
+  return `ORG-${Utilities.getUuid()}`;
+}
+
+/**
+ * Normalizar manufacturers (para listas de fabricantes)
+ */
+function normalizeManufacturers_(raw) {
+  let list = [];
+
+  if (raw === null || raw === undefined) {
+    list = [];
+  } else if (Array.isArray(raw)) {
+    list = raw.map((x) => {
+      if (x && typeof x === "object") return String(x.Value || x.value || "").trim();
+      return String(x || "").trim();
+    });
+  } else if (typeof raw === "object") {
+    const v = raw.Value || raw.value || "";
+    list = String(v).split(/[;,|]/).map((s) => s.trim());
+  } else {
+    list = String(raw).split(/[;,|]/).map((s) => s.trim());
+  }
+
+  const cleaned = list.filter(Boolean);
+  const uniq = Array.from(new Set(cleaned));
+
+  const priority = ["Microsoft", "AWS", "Amazon", "Google"];
+  uniq.sort((a, b) => {
+    const pa = priority.findIndex((p) => a.toLowerCase().includes(p.toLowerCase()));
+    const pb = priority.findIndex((p) => b.toLowerCase().includes(p.toLowerCase()));
+    const aa = pa === -1 ? 999 : pa;
+    const bb = pb === -1 ? 999 : pb;
+    if (aa !== bb) return aa - bb;
+    return a.localeCompare(b);
+  });
+
+  return uniq.join(", ");
 }

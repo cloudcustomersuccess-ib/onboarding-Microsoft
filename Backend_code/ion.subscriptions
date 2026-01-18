@@ -1,8 +1,8 @@
 /**
  * ION - Subscriptions API - CORREGIDO
  * Filtra parámetros internos (path, sessionToken) que no deben ir a ION
+ * GET /api/v3/accounts/{accountId}/subscriptions
  */
-
 function ionSubscriptions_(req, user) {
   const orgId = getOrgIdForIon_(user);
 

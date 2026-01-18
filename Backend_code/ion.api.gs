@@ -33,7 +33,7 @@ function ionConnect_(req, user) {
   const orgId = getOrgIdForIon_(user);
   const now = now_();
 
-  // ✅ Lock: refresh token es single-use
+  // ✅ Lock: refresh token suele ser single-use (rotatorio)
   const lock = ionLock_();
   try {
     // 1) Validar refresh token refrescando a access token
@@ -41,7 +41,9 @@ function ionConnect_(req, user) {
 
     const accessToken = String(tokenPair.access_token || "");
     if (!accessToken) {
-      throw new Error("ION oauth/token no devolvió access_token (refresh token inválido o respuesta inesperada)");
+      throw new Error(
+        "ION oauth/token no devolvió access_token (refresh token inválido o respuesta inesperada)"
+      );
     }
 
     // refresh token puede rotar (single-use). Guardar el nuevo si viene
@@ -115,49 +117,89 @@ function ionRefreshTokens_(hostname, refreshToken) {
   throw new Error(`ION oauth/token failed (HTTP ${code}). ${safeIonErr_(text)}`);
 }
 
-/** Regla 90 días + refresh automático (para cuando empieces a llamar endpoints reales) */
-function ionEnsureAccessToken_(orgId) {
+/**
+ * ✅ Regla 90 días + refresh automático con anti "double refresh"
+ * - si access válido: devuelve access
+ * - si expirado: refresh una vez (lock)
+ * - re-check dentro del lock: si otro request ya refrescó, NO refresca otra vez
+ */
+function ionEnsureAccessToken_(orgId, opts) {
   orgId = String(orgId || "").trim();
   if (!orgId) throw new Error("ionEnsureAccessToken_: orgId requerido");
 
+  opts = opts || {};
+  const force = !!opts.force;
+
   const existing = ionConnFindByOrg_(orgId);
-  if (!existing) throw new Error("ION: conexión no encontrada (reconectar)");
+  if (!existing) {
+    throw new Error(
+      "ION refresh token expired or invalid. Please reconnect ION with a new token from the ION portal."
+    );
+  }
 
   const conn = existing.data || {};
   const now = new Date();
 
+  // Regla inactividad (si aplica)
   const lastUsedAt = ionParseDate_(conn.lastUsedAt);
   if (lastUsedAt && ionDaysBetween_(lastUsedAt, now) > ION_INACTIVITY_DAYS) {
-    ionPurgeConnection_(orgId, "Purged due to inactivity > 90 days");
-    throw new Error("ION: conexión eliminada por inactividad (>90 días). Reconfigura ION en la app.");
+    ionPurgeConnection_(orgId, `Purged due to inactivity > ${ION_INACTIVITY_DAYS} days`);
+    throw new Error(
+      "ION refresh token expired or invalid. Please reconnect ION with a new token from the ION portal."
+    );
   }
 
   if (String(conn.status || "") !== "connected") {
-    throw new Error(`ION: status=${conn.status || "unknown"} (reconectar)`);
+    throw new Error(
+      "ION refresh token expired or invalid. Please reconnect ION with a new token from the ION portal."
+    );
   }
 
-  const accessExpiresAt = ionParseDate_(conn.accessExpiresAt);
-  if (accessExpiresAt && accessExpiresAt.getTime() > now.getTime()) {
-    const access = ionDecryptToken_(String(conn.accessTokenCiphertext || ""));
-    if (access) {
-      ionConnUpsert_(orgId, { lastUsedAt: now_() });
-      return access;
+  // 1) Si NO es force y access aún es válido, úsalo
+  if (!force) {
+    const accessExpiresAt = ionParseDate_(conn.accessExpiresAt);
+    if (accessExpiresAt && accessExpiresAt.getTime() > now.getTime()) {
+      const access = ionDecryptToken_(String(conn.accessTokenCiphertext || ""));
+      if (access) {
+        ionConnUpsert_(orgId, { lastUsedAt: now_() });
+        return access;
+      }
     }
   }
 
+  // 2) Lock para evitar refresh duplicado
   const lock = ionLock_();
   try {
     const again = ionConnFindByOrg_(orgId);
     const c2 = (again && again.data) || {};
 
+    // ✅ RE-CHECK solo si NO force: quizá otro request refrescó mientras esperabas el lock
+    if (!force) {
+      const accessExpiresAt2 = ionParseDate_(c2.accessExpiresAt);
+      if (accessExpiresAt2 && accessExpiresAt2.getTime() > Date.now()) {
+        const access2 = ionDecryptToken_(String(c2.accessTokenCiphertext || ""));
+        if (access2) {
+          ionConnUpsert_(orgId, { lastUsedAt: now_() });
+          return access2;
+        }
+      }
+    }
+
+    // 3) Refrescar con refresh token (rotatorio/single-use)
     const refresh = ionDecryptToken_(String(c2.refreshTokenCiphertext || ""));
-    if (!refresh) throw new Error("ION: no hay refresh token guardado (reconectar)");
+    if (!refresh) {
+      throw new Error(
+        "ION refresh token expired or invalid. Please reconnect ION with a new token from the ION portal."
+      );
+    }
 
     const tokenPair = ionRefreshTokens_(String(c2.ionHostname || ""), refresh);
     const accessNew = String(tokenPair.access_token || "");
     if (!accessNew) throw new Error("ION oauth/token no devolvió access_token");
 
+    // Refresh puede rotar: guardar el nuevo si llega
     const refreshNew = String(tokenPair.refresh_token || refresh);
+
     const expiresIn = Number(tokenPair.expires_in || 0);
     const accessExpiresAtIso =
       ionIsoPlusSeconds_(expiresIn > 0 ? (expiresIn - ION_ACCESS_SKEW_SECONDS) : 0);
@@ -171,6 +213,10 @@ function ionEnsureAccessToken_(orgId) {
       tokenLast4: refreshNew.slice(-4),
       status: "connected",
       lastError: "",
+      // opcional: útil para debug/concurrencia
+      lastRefreshAt: now_(),
+      // opcional: si tienes columna refreshRotations
+      refreshRotations: (Number(c2.refreshRotations || 0) + 1),
     });
 
     return accessNew;
@@ -178,6 +224,7 @@ function ionEnsureAccessToken_(orgId) {
     try { lock.releaseLock(); } catch (_) {}
   }
 }
+
 
 function ionPurgeConnection_(orgId, reason) {
   const now = now_();
@@ -342,6 +389,7 @@ function ionLock_() {
   lock.waitLock(20000);
   return lock;
 }
+
 function ionPing_(req, user) {
   const orgId = getOrgIdForIon_(user);
 
@@ -360,6 +408,7 @@ function ionPing_(req, user) {
     accessTokenLast4: String(access || "").slice(-4),
   };
 }
+
 function normalizeTs_(v) {
   if (!v) return "";
   // Si la celda viene como Date (a veces Sheets lo devuelve así)
@@ -375,4 +424,120 @@ function normalizeTs_(v) {
   }
   // Si es string, lo devolvemos tal cual
   return String(v);
+}
+/** =========================
+ * ION Reports (v3) - Helpers + Endpoints
+ * ========================= */
+
+function ionParam_(req, key, fallback) {
+  fallback = (fallback === undefined) ? "" : fallback;
+
+  const q = (req && req.query) ? req.query : {};
+  const b = (req && req.body) ? req.body : {};
+
+  // exact
+  if (q && Object.prototype.hasOwnProperty.call(q, key)) return q[key];
+  if (b && Object.prototype.hasOwnProperty.call(b, key)) return b[key];
+
+  // lowercase key
+  const lk = String(key || "").toLowerCase();
+  if (q) {
+    const qk = Object.keys(q).find(k => String(k).toLowerCase() === lk);
+    if (qk) return q[qk];
+  }
+  if (b) {
+    const bk = Object.keys(b).find(k => String(k).toLowerCase() === lk);
+    if (bk) return b[bk];
+  }
+
+  return fallback;
+}
+
+function ionBool_(v, def) {
+  if (v === true || v === false) return v;
+  const s = String(v || "").trim().toLowerCase();
+  if (!s) return !!def;
+  return (s === "true" || s === "1" || s === "yes" || s === "y" || s === "on");
+}
+
+function ionRequireReportId_(req) {
+  const reportId = String(ionParam_(req, "reportId", "")).trim();
+  if (!reportId) throw new Error("reportId requerido");
+  return reportId;
+}
+
+/**
+ * GET /integrations/ion/reports?module=...
+ * - Descubre reportes por módulo (DASHBOARDS_REPORTS_MODULE, etc.)
+ */
+function ionReports_(req, user) {
+  const orgId = getOrgIdForIon_(user);
+
+  const module = String(ionParam_(req, "module", "DASHBOARDS_REPORTS_MODULE")).trim();
+  if (!module) throw new Error("module requerido");
+
+  // ION endpoint real: GET /reports?module=...
+  const result = ionRequest_(orgId, "GET", "/reports", { query: { module } });
+
+  return {
+    ok: true,
+    orgId,
+    module,
+    data: result.data || null,
+  };
+}
+
+/**
+ * GET/POST /integrations/ion/reports/metadata?reportId=...&includeMetadata=true
+ * - Llama a: POST /reports/{reportId}/report
+ */
+function ionReportMetadata_(req, user) {
+  const orgId = getOrgIdForIon_(user);
+
+  const reportId = ionRequireReportId_(req);
+  const includeMetadata = ionBool_(ionParam_(req, "includeMetadata", true), true);
+
+  // El endpoint ION es POST, aunque "solo" lea definición
+  const payload = { includeMetadata: includeMetadata };
+
+  const result = ionRequest_(orgId, "POST", `/reports/${encodeURIComponent(reportId)}/report`, {
+    body: payload,
+  });
+
+  return {
+    ok: true,
+    orgId,
+    reportId,
+    includeMetadata,
+    data: result.data || null,
+  };
+}
+
+/**
+ * POST /integrations/ion/reports/data
+ * - Acepta reportId por query o body
+ * - body.payload = payload del reporte (dateRangeOption, filters, etc.)
+ * - Llama a: POST /reports/{reportId}/data
+ */
+function ionReportData_(req, user) {
+  const orgId = getOrgIdForIon_(user);
+
+  const reportId = ionRequireReportId_(req);
+
+  // Permitimos que la UI mande:
+  //  - req.body.payload (recomendado)
+  //  - o el body entero como payload si no viene anidado
+  const body = (req && req.body) ? req.body : {};
+  const payload = (body && typeof body === "object" && body.payload) ? body.payload : body;
+
+  const result = ionRequest_(orgId, "POST", `/reports/${encodeURIComponent(reportId)}/data`, {
+    body: payload || {},
+  });
+
+  return {
+    ok: true,
+    orgId,
+    reportId,
+    data: result.data || null,
+  };
 }
