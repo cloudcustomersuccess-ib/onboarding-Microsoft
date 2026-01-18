@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import {
-  Card,
   Form,
   Input,
   Button,
   Alert,
   Typography,
-  Space,
-  Divider,
   message,
 } from "antd";
-import { MailOutlined } from "@ant-design/icons";
+import { MailOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { requestOtp, verifyOtp } from "@/lib/api";
@@ -87,42 +84,60 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.leftPanel}>
-        <div className={styles.tdLogo}>
-          <Image
-            src="/images/TD SYNNEX_Logo_Standard.png"
-            alt="TD SYNNEX"
-            width={160}
-            height={36}
-            priority
-          />
-        </div>
+      <section className={styles.leftPanel}>
+        <div className={styles.gradientOverlay} aria-hidden="true" />
+        <div className={styles.leftContent}>
+          <div className={styles.tdLogo}>
+            <Image
+              src="/images/TD SYNNEX_Logo_Standard.png"
+              alt="TD SYNNEX"
+              width={160}
+              height={36}
+              priority
+            />
+          </div>
 
-        <Card className={styles.formCard} bordered={false}>
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
-            <div className={styles.formHeader}>
-              <div className={styles.growthBadge}>
-                <Image
-                  src="/images/Growth_Lab_Light_Mode.png"
-                  alt="Growth Lab"
-                  width={28}
-                  height={28}
-                />
-              </div>
-              <div>
-                <Title level={3} className={styles.formTitle}>
-                  Get Started
-                </Title>
-                <Text type="secondary">
-                  Welcome to Growth Lab. Sign in with your OTP code.
-                </Text>
-              </div>
+          <div className={styles.heroContent}>
+            <div className={styles.iconBadge}>
+              <ThunderboltOutlined />
             </div>
+            <Text className={styles.heroLabel}>You can easily</Text>
+            <Title level={1} className={`${styles.heroTitle} ${playfair.className}`}>
+              Get access your personal hub for clarity and productivity
+            </Title>
+          </div>
+        </div>
+      </section>
 
-            <Divider className={styles.divider} />
+      <section className={styles.rightPanel}>
+        <div className={styles.formWrapper}>
+          <div className={styles.growthLabLogo}>
+            <Image
+              src="/images/Growth_Lab_Light_Mode.png"
+              alt="Growth Lab"
+              width={52}
+              height={52}
+              priority
+            />
+          </div>
+
+          <div className={styles.formContent}>
+            <Title level={2} className={styles.formTitle}>
+              Sign in to your account
+            </Title>
+            <Text className={styles.formSubtitle}>
+              Access your tasks, notes, and projects anytime, anywhere - and keep
+              everything flowing in one place.
+            </Text>
 
             {error && (
-              <Alert message="Error" description={error} type="error" showIcon />
+              <Alert
+                message="Error"
+                description={error}
+                type="error"
+                showIcon
+                className={styles.errorAlert}
+              />
             )}
 
             {currentStep === 0 && (
@@ -130,10 +145,10 @@ export default function LoginPage() {
                 form={emailForm}
                 layout="vertical"
                 onFinish={handleRequestOtp}
-                className={styles.form}
+                className={styles.loginForm}
               >
                 <Form.Item
-                  label="Email Address"
+                  label="Email"
                   name="email"
                   rules={[
                     { required: true, message: "Please enter your email" },
@@ -144,6 +159,7 @@ export default function LoginPage() {
                     prefix={<MailOutlined />}
                     placeholder="name@company.com"
                     size="large"
+                    className={styles.input}
                   />
                 </Form.Item>
 
@@ -156,7 +172,7 @@ export default function LoginPage() {
                     loading={loading}
                     className={styles.primaryButton}
                   >
-                    Send Verification Code
+                    Get Started
                   </Button>
                 </Form.Item>
               </Form>
@@ -167,16 +183,15 @@ export default function LoginPage() {
                 form={otpForm}
                 layout="vertical"
                 onFinish={handleVerifyOtp}
-                className={styles.form}
+                className={styles.loginForm}
               >
-                <Alert
-                  message={`Verification code sent to ${email}`}
-                  type="info"
-                  showIcon
-                />
+                <div className={styles.emailChip}>
+                  <MailOutlined />
+                  <Text className={styles.emailChipText}>{email}</Text>
+                </div>
 
                 <Form.Item
-                  label="Verification Code"
+                  label="Verification code"
                   name="otp"
                   rules={[
                     { required: true, message: "Please enter the code" },
@@ -192,88 +207,32 @@ export default function LoginPage() {
                 </Form.Item>
 
                 <Form.Item>
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      size="large"
-                      block
-                      loading={loading}
-                      className={styles.primaryButton}
-                    >
-                      Verify & Login
-                    </Button>
-
-                    <Button
-                      type="link"
-                      block
-                      onClick={handleBackToEmail}
-                      disabled={loading}
-                    >
-                      Use different email
-                    </Button>
-                  </Space>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    block
+                    loading={loading}
+                    className={styles.primaryButton}
+                  >
+                    Verify & Continue
+                  </Button>
                 </Form.Item>
+
+                <Button
+                  type="link"
+                  block
+                  onClick={handleBackToEmail}
+                  disabled={loading}
+                  className={styles.secondaryLink}
+                >
+                  Use a different email
+                </Button>
               </Form>
             )}
-          </Space>
-        </Card>
-      </div>
-
-      <div className={styles.rightPanel}>
-        <div className={styles.rightContent}>
-          <div>
-            <Text className={styles.brandLabel}>Filiannta</Text>
-            <Title level={1} className={`${styles.heroTitle} ${playfair.className}`}>
-              Enter the Future
-              <br />
-              of Payments,
-              <br />
-              today
-            </Title>
-          </div>
-
-          <div className={styles.cardsRow}>
-            <div className={styles.miniCard}>
-              <div className={styles.miniBadge} />
-              <div className={styles.miniDots}>
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statLogo}>
-                <Image
-                  src="/images/Growth_Lab_Light_Mode.png"
-                  alt="Growth Lab"
-                  width={20}
-                  height={20}
-                />
-              </div>
-              <Text className={styles.statValue}>12,347.23 $</Text>
-              <Text type="secondary" className={styles.statLabel}>
-                Combined balance
-              </Text>
-              <Divider className={styles.cardDivider} />
-              <div className={styles.cardRow}>
-                <Text className={styles.cardTitle}>Primary Card</Text>
-                <Text className={styles.cardAmount}>2,546.64$</Text>
-              </div>
-              <Text className={styles.cardMeta}>3495 **** **** 6917</Text>
-            </div>
           </div>
         </div>
-
-        <div className={styles.rightLogo}>
-          <Image
-            src="/images/Growth_Lab_Light_Mode.png"
-            alt="Growth Lab"
-            width={42}
-            height={42}
-          />
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
