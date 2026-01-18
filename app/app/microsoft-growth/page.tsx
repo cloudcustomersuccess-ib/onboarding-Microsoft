@@ -93,39 +93,31 @@ export default function MicrosoftGrowthPage() {
         getIonKpiGrowthVsPreviousMonth(token),
       ]);
 
-      // Verificar si alguna respuesta tiene error
-      const firstError =
-        customers?.error || subscriptions?.error || consumption?.error || growth?.error || null;
+      // ✅ FIX: Recopilar TODOS los errores
+      const errors: string[] = [];
+      if (customers?.error) errors.push(`Active Customers: ${customers.error}`);
+      if (subscriptions?.error) errors.push(`Active Subscriptions: ${subscriptions.error}`);
+      if (consumption?.error) errors.push(`Consumption: ${consumption.error}`);
+      if (growth?.error) errors.push(`Growth: ${growth.error}`);
 
-      if (firstError) {
-        setState((s) => ({ 
-          ...s, 
-          loading: false, 
-          error: firstError,
-          // Mantener datos aunque haya error para mostrar lo que sí funcionó
-          activeCustomers: customers.ok ? customers : null,
-          activeSubscriptions: subscriptions.ok ? subscriptions : null,
-          currentMonthConsumption: consumption.ok ? consumption : null,
-          growth: growth.ok ? growth : null,
-        }));
-        return;
-      }
-
+      // ✅ FIX: SIEMPRE guardar los datos que SÍ funcionaron
       setState({
         loading: false,
-        error: null,
-        activeCustomers: customers,
-        activeSubscriptions: subscriptions,
-        currentMonthConsumption: consumption,
-        growth: growth,
+        error: errors.length > 0 ? errors.join("\n\n") : null,
+        // Guardar datos SOLO si ok=true, independientemente de los errores
+        activeCustomers: customers?.ok ? customers : null,
+        activeSubscriptions: subscriptions?.ok ? subscriptions : null,
+        currentMonthConsumption: consumption?.ok ? consumption : null,
+        growth: growth?.ok ? growth : null,
       });
+
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load dashboard KPIs";
       setState((s) => ({ 
         ...s, 
         loading: false, 
         error: msg,
-        // Mantener datos previos
+        // Mantener datos previos si los había
       }));
     }
   };
@@ -134,7 +126,7 @@ export default function MicrosoftGrowthPage() {
     load();
   }, []);
 
-  // Valores por defecto para evitar errores
+  // ✅ FIX: Valores por defecto más robustos
   const activeCustomersCount = state.activeCustomers?.activeCustomersCount ?? 0;
   const totalActiveSubscriptions = state.activeSubscriptions?.totalActiveSubscriptions ?? 0;
   const currentMonthTotal = state.currentMonthConsumption?.totalConsumption ?? 0;
@@ -175,8 +167,12 @@ export default function MicrosoftGrowthPage() {
       >
         {state.error && (
           <Alert
-            message="Error loading some KPIs"
-            description={state.error}
+            message="Some KPIs could not be loaded"
+            description={
+              <div style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
+                {state.error}
+              </div>
+            }
             type="warning"
             showIcon
             closable
@@ -195,44 +191,23 @@ export default function MicrosoftGrowthPage() {
             {/* Fila 1: KPIs principales */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               <Col xs={24} sm={12} lg={6}>
-                <Card size="small" style={{ background: "#f0f5ff" }}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: state.activeCustomers?.ok ? "#f0f5ff" : "#f5f5f5",
+                    opacity: state.activeCustomers?.ok ? 1 : 0.6
+                  }}
+                >
                   <Statistic
                     title="Active Customers"
                     value={activeCustomersCount}
                     prefix="👥"
-                    valueStyle={{ color: "#1890ff" }}
+                    valueStyle={{ color: state.activeCustomers?.ok ? "#1890ff" : "#8c8c8c" }}
                   />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Customers with active subscriptions
-                  </Text>
-                </Card>
-              </Col>
-
-              <Col xs={24} sm={12} lg={6}>
-                <Card size="small" style={{ background: "#f6ffed" }}>
-                  <Statistic
-                    title="Active Subscriptions"
-                    value={totalActiveSubscriptions}
-                    prefix="📋"
-                    valueStyle={{ color: "#52c41a" }}
-                  />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Total subscriptions in ACTIVE status
-                  </Text>
-                </Card>
-              </Col>
-
-              <Col xs={24} sm={12} lg={6}>
-                <Card size="small" style={{ background: "#fff7e6" }}>
-                  <Statistic
-                    title="Current Month Consumption"
-                    value={currentMonthTotal}
-                    formatter={(v) => formatCurrency(Number(v), currency)}
-                    prefix="💰"
-                    valueStyle={{ color: "#fa8c16" }}
-                  />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {state.currentMonthConsumption?.currentMonth || "This month"}
+                    {state.activeCustomers?.ok 
+                      ? "Customers with active subscriptions" 
+                      : "⚠️ Data unavailable"}
                   </Text>
                 </Card>
               </Col>
@@ -241,19 +216,70 @@ export default function MicrosoftGrowthPage() {
                 <Card 
                   size="small" 
                   style={{ 
-                    background: growthPercentage >= 0 ? "#f6ffed" : "#fff1f0" 
+                    background: state.activeSubscriptions?.ok ? "#f6ffed" : "#f5f5f5",
+                    opacity: state.activeSubscriptions?.ok ? 1 : 0.6
+                  }}
+                >
+                  <Statistic
+                    title="Active Subscriptions"
+                    value={totalActiveSubscriptions}
+                    prefix="📋"
+                    valueStyle={{ color: state.activeSubscriptions?.ok ? "#52c41a" : "#8c8c8c" }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {state.activeSubscriptions?.ok 
+                      ? "Total subscriptions in ACTIVE status" 
+                      : "⚠️ Data unavailable"}
+                  </Text>
+                </Card>
+              </Col>
+
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: state.currentMonthConsumption?.ok ? "#fff7e6" : "#f5f5f5",
+                    opacity: state.currentMonthConsumption?.ok ? 1 : 0.6
+                  }}
+                >
+                  <Statistic
+                    title="Current Month Consumption"
+                    value={currentMonthTotal}
+                    formatter={(v) => formatCurrency(Number(v), currency)}
+                    prefix="💰"
+                    valueStyle={{ color: state.currentMonthConsumption?.ok ? "#fa8c16" : "#8c8c8c" }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {state.currentMonthConsumption?.ok 
+                      ? (state.currentMonthConsumption?.currentMonth || "This month")
+                      : "⚠️ Data unavailable"}
+                  </Text>
+                </Card>
+              </Col>
+
+              <Col xs={24} sm={12} lg={6}>
+                <Card 
+                  size="small" 
+                  style={{ 
+                    background: state.growth?.ok 
+                      ? (growthPercentage >= 0 ? "#f6ffed" : "#fff1f0")
+                      : "#f5f5f5",
+                    opacity: state.growth?.ok ? 1 : 0.6
                   }}
                 >
                   <Statistic
                     title="Growth vs Previous Month"
                     value={growthPercentage}
                     formatter={(v) => formatPercentage(Number(v))}
-                    prefix={getGrowthIcon(growthPercentage)}
-                    valueStyle={{ color: getGrowthColor(growthPercentage) }}
+                    prefix={state.growth?.ok ? getGrowthIcon(growthPercentage) : "⚠️"}
+                    valueStyle={{ 
+                      color: state.growth?.ok ? getGrowthColor(growthPercentage) : "#8c8c8c" 
+                    }}
                   />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {formatCurrency(Math.abs(growthAbsolute), currency)} 
-                    {growthPercentage >= 0 ? " increase" : " decrease"}
+                    {state.growth?.ok 
+                      ? `${formatCurrency(Math.abs(growthAbsolute), currency)} ${growthPercentage >= 0 ? "increase" : "decrease"}`
+                      : "⚠️ Data unavailable"}
                   </Text>
                 </Card>
               </Col>
@@ -267,37 +293,48 @@ export default function MicrosoftGrowthPage() {
                   size="small"
                   style={{ height: "100%" }}
                 >
-                  <Row gutter={[16, 16]}>
-                    <Col span={12}>
-                      <Statistic
-                        title={`Current Month (${currentPeriod})`}
-                        value={currentTotal}
-                        formatter={(v) => formatCurrency(Number(v), currency)}
-                        valueStyle={{ fontSize: 18 }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title={`Previous Month (${previousPeriod})`}
-                        value={previousTotal}
-                        formatter={(v) => formatCurrency(Number(v), currency)}
-                        valueStyle={{ fontSize: 18 }}
-                      />
-                    </Col>
-                  </Row>
-                  <div style={{ marginTop: 16, padding: 12, background: "#fafafa", borderRadius: 4 }}>
-                    <Text strong>Absolute Change: </Text>
-                    <Text 
-                      style={{ 
-                        color: getGrowthColor(growthPercentage),
-                        fontSize: 16,
-                        fontWeight: 600
-                      }}
-                    >
-                      {growthAbsolute >= 0 ? "+" : ""}
-                      {formatCurrency(growthAbsolute, currency)}
-                    </Text>
-                  </div>
+                  {state.growth?.ok ? (
+                    <>
+                      <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                          <Statistic
+                            title={`Current Month (${currentPeriod})`}
+                            value={currentTotal}
+                            formatter={(v) => formatCurrency(Number(v), currency)}
+                            valueStyle={{ fontSize: 18 }}
+                          />
+                        </Col>
+                        <Col span={12}>
+                          <Statistic
+                            title={`Previous Month (${previousPeriod})`}
+                            value={previousTotal}
+                            formatter={(v) => formatCurrency(Number(v), currency)}
+                            valueStyle={{ fontSize: 18 }}
+                          />
+                        </Col>
+                      </Row>
+                      <div style={{ marginTop: 16, padding: 12, background: "#fafafa", borderRadius: 4 }}>
+                        <Text strong>Absolute Change: </Text>
+                        <Text 
+                          style={{ 
+                            color: getGrowthColor(growthPercentage),
+                            fontSize: 16,
+                            fontWeight: 600
+                          }}
+                        >
+                          {growthAbsolute >= 0 ? "+" : ""}
+                          {formatCurrency(growthAbsolute, currency)}
+                        </Text>
+                      </div>
+                    </>
+                  ) : (
+                    <Alert
+                      message="Growth data unavailable"
+                      description="Could not retrieve month-over-month comparison data"
+                      type="warning"
+                      showIcon
+                    />
+                  )}
                 </Card>
               </Col>
 
@@ -327,8 +364,25 @@ export default function MicrosoftGrowthPage() {
                       <Text>
                         {state.growth?.timestamp 
                           ? new Date(state.growth.timestamp).toLocaleString() 
+                          : state.activeSubscriptions?.timestamp
+                          ? new Date(state.activeSubscriptions.timestamp).toLocaleString()
                           : "-"}
                       </Text>
+                    </div>
+                    <div>
+                      <Text type="secondary">Status:</Text>
+                      <br />
+                      <Space size="small" wrap>
+                        {state.activeCustomers?.ok && <Text style={{ color: "#52c41a" }}>✓ Customers</Text>}
+                        {state.activeSubscriptions?.ok && <Text style={{ color: "#52c41a" }}>✓ Subscriptions</Text>}
+                        {state.currentMonthConsumption?.ok && <Text style={{ color: "#52c41a" }}>✓ Consumption</Text>}
+                        {state.growth?.ok && <Text style={{ color: "#52c41a" }}>✓ Growth</Text>}
+                        
+                        {!state.activeCustomers?.ok && <Text type="danger">✗ Customers</Text>}
+                        {!state.activeSubscriptions?.ok && <Text type="danger">✗ Subscriptions</Text>}
+                        {!state.currentMonthConsumption?.ok && <Text type="danger">✗ Consumption</Text>}
+                        {!state.growth?.ok && <Text type="danger">✗ Growth</Text>}
+                      </Space>
                     </div>
                   </Space>
                 </Card>
