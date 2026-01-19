@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider } from "antd";
 import { Inter } from "next/font/google";
+import CustomCursor from "@/components/CustomCursor";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -69,6 +70,7 @@ export default function RootLayout({
               },
             }}
           >
+            <CustomCursor />
             {children}
           </ConfigProvider>
         </AntdRegistry>

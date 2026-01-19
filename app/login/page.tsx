@@ -83,52 +83,58 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <section className={styles.leftPanel}>
-        <div className={styles.gradientOverlay} aria-hidden="true" />
-        <div className={styles.leftContent}>
-          <div className={styles.tdLogo}>
-            <Image
-              src="/images/TD SYNNEX_Logo_Standard.png"
-              alt="TD SYNNEX"
-              width={160}
-              height={36}
-              priority
-            />
+    <div className={styles.pageShell}>
+      <div className={styles.card}>
+        <section className={styles.leftPanel}>
+          <div className={styles.leftGlow} aria-hidden="true" />
+          <div className={styles.leftTop}>
+            <div className={styles.logoWrap}>
+              <Image
+                src="/images/TD SYNNEX_Logo_Standard.png"
+                alt="TD SYNNEX"
+                width={180}
+                height={40}
+                priority
+                className={styles.logoImage}
+              />
+            </div>
           </div>
 
-          <div className={styles.heroContent}>
-            <div className={styles.iconBadge}>
+          <div className={styles.leftContent}>
+            <div className={styles.starMark}>
               <ThunderboltOutlined />
             </div>
-            <Text className={styles.heroLabel}>You can easily</Text>
-            <Title level={1} className={`${styles.heroTitle} ${playfair.className}`}>
+            <Text className={styles.leftKicker}>You can easily</Text>
+            <Title level={2} className={`${styles.leftTitle} ${playfair.className}`}>
               Get access your personal hub for clarity and productivity
             </Title>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className={styles.rightPanel}>
-        <div className={styles.formWrapper}>
-          <div className={styles.growthLabLogo}>
-            <Image
-              src="/images/Growth_Lab_Light_Mode.png"
-              alt="Growth Lab"
-              width={52}
-              height={52}
-              priority
-            />
-          </div>
+        <section className={styles.rightPanel}>
+          <div className={styles.rightInner}>
+            <div className={styles.brandRow}>
+              <div className={styles.brandLogoWrap}>
+                <Image
+                  src="/images/Growth_Lab_Light_Mode.png"
+                  alt="Growth Lab"
+                  width={140}
+                  height={40}
+                  priority
+                  className={styles.logoImage}
+                />
+              </div>
+            </div>
 
-          <div className={styles.formContent}>
-            <Title level={2} className={styles.formTitle}>
-              Sign in to your account
-            </Title>
-            <Text className={styles.formSubtitle}>
-              Access your tasks, notes, and projects anytime, anywhere - and keep
-              everything flowing in one place.
-            </Text>
+            <div className={styles.headerBlock}>
+              <Title level={2} className={styles.formTitle}>
+                Sign in to your account
+              </Title>
+              <Text className={styles.formSubtitle}>
+                Access your tasks, notes, and projects anytime, anywhere - and keep
+                everything flowing in one place.
+              </Text>
+            </div>
 
             {error && (
               <Alert
@@ -140,99 +146,99 @@ export default function LoginPage() {
               />
             )}
 
-            {currentStep === 0 && (
-              <Form
-                form={emailForm}
-                layout="vertical"
-                onFinish={handleRequestOtp}
-                className={styles.loginForm}
-              >
-                <Form.Item
-                  label="Email"
-                  name="email"
-                  rules={[
-                    { required: true, message: "Please enter your email" },
-                    { type: "email", message: "Please enter a valid email" },
-                  ]}
+            <div key={currentStep} className={styles.stepAnim}>
+              {currentStep === 0 ? (
+                <Form
+                  form={emailForm}
+                  layout="vertical"
+                  onFinish={handleRequestOtp}
+                  className={styles.form}
                 >
-                  <Input
-                    prefix={<MailOutlined />}
-                    placeholder="name@company.com"
-                    size="large"
-                    className={styles.input}
-                  />
-                </Form.Item>
-
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    size="large"
-                    block
-                    loading={loading}
-                    className={styles.primaryButton}
+                  <Form.Item
+                    label="Email"
+                    name="email"
+                    rules={[
+                      { required: true, message: "Please enter your email" },
+                      { type: "email", message: "Please enter a valid email" },
+                    ]}
                   >
-                    Get Started
-                  </Button>
-                </Form.Item>
-              </Form>
-            )}
+                    <Input
+                      prefix={<MailOutlined />}
+                      placeholder="name@company.com"
+                      size="large"
+                      className={styles.input}
+                    />
+                  </Form.Item>
 
-            {currentStep === 1 && (
-              <Form
-                form={otpForm}
-                layout="vertical"
-                onFinish={handleVerifyOtp}
-                className={styles.loginForm}
-              >
-                <div className={styles.emailChip}>
-                  <MailOutlined />
-                  <Text className={styles.emailChipText}>{email}</Text>
-                </div>
-
-                <Form.Item
-                  label="Verification code"
-                  name="otp"
-                  rules={[
-                    { required: true, message: "Please enter the code" },
-                    { len: 6, message: "Code must be 6 digits" },
-                  ]}
+                  <Form.Item>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      block
+                      loading={loading}
+                      className={styles.primaryButton}
+                    >
+                      Get Started
+                    </Button>
+                  </Form.Item>
+                </Form>
+              ) : (
+                <Form
+                  form={otpForm}
+                  layout="vertical"
+                  onFinish={handleVerifyOtp}
+                  className={styles.form}
                 >
-                  <Input.OTP
-                    length={6}
-                    size="large"
-                    type="tel"
-                    className={styles.otpInput}
-                  />
-                </Form.Item>
+                  <div className={styles.emailPill}>
+                    <MailOutlined />
+                    <Text className={styles.emailPillText}>{email}</Text>
+                  </div>
 
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    size="large"
-                    block
-                    loading={loading}
-                    className={styles.primaryButton}
+                  <Form.Item
+                    label="Verification code"
+                    name="otp"
+                    rules={[
+                      { required: true, message: "Please enter the code" },
+                      { len: 6, message: "Code must be 6 digits" },
+                    ]}
                   >
-                    Verify & Continue
-                  </Button>
-                </Form.Item>
+                    <Input.OTP
+                      length={6}
+                      size="large"
+                      type="tel"
+                      className={styles.otp}
+                    />
+                  </Form.Item>
 
-                <Button
-                  type="link"
-                  block
-                  onClick={handleBackToEmail}
-                  disabled={loading}
-                  className={styles.secondaryLink}
-                >
-                  Use a different email
-                </Button>
-              </Form>
-            )}
+                  <Form.Item>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      block
+                      loading={loading}
+                      className={styles.primaryButton}
+                    >
+                      Verify & Continue
+                    </Button>
+                  </Form.Item>
+
+                  <Button
+                    type="link"
+                    block
+                    onClick={handleBackToEmail}
+                    disabled={loading}
+                    className={styles.linkBtn}
+                  >
+                    Use a different email
+                  </Button>
+                </Form>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
